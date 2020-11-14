@@ -1,6 +1,6 @@
+import logging
 import os
 import sys
-import logging
 import textwrap
 from typing import AsyncGenerator, Tuple
 
