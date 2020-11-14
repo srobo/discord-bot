@@ -1,5 +1,7 @@
 # discord-gated-entry
 
+[![CircleCI](https://circleci.com/gh/srobo/discord-gated-entry.svg?style=svg)](https://circleci.com/gh/srobo/discord-gated-entry)
+
 A discord bot to gate the entry of a discord server on multiple passwords (each one giving a different role)
 
 The use case is as follows:
@@ -11,9 +13,11 @@ The use case is as follows:
 
 See requirements.txt
 
-## Discord server set-up instructions
+For development, see `script/requirements.txt`
 
-- Ensure the `everyone` role cannot see any channels by default.
+# Discord server set-up instructions
+
+- ensure the `everyone` role cannot see any channels by default.
 - Create a role named `verified` which can see the base channels (i.e. #general)
 - Create a new channel category called 'welcome', block all users from reading this category in its permissions.
 - Create another channel, visible only to the admins, named '#role-passwords', enter in it 1 message per role in the form `role : password`
