@@ -9,14 +9,10 @@ import discord.utils  # type: ignore[import]
 from dotenv import load_dotenv
 
 logger = logging.getLogger('srbot')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
+handler.setLevel(logging.INFO)
 logger.addHandler(handler)
-# Create file handler which logs even debug messages
-fh = logging.FileHandler('log.log')
-fh.setLevel(logging.DEBUG)
-logger.addHandler(fh)
 
 intents = discord.Intents.default()
 intents.members = True  # Listen to member joins
@@ -27,7 +23,7 @@ client = discord.Client(intents=intents)
 WELCOME_CATEGORY_NAME = "welcome"
 
 # Name of the channel to announce welcome messages to.
-ANNOUNCE_CHANNEL_NAME = "general"
+ANNOUNCE_CHANNEL_NAME = "say-hello"
 
 # prefix used to identify the channels to listen to passwords in.
 CHANNEL_PREFIX = "welcome-"
@@ -62,6 +58,7 @@ async def on_member_join(member: discord.Member) -> None:
         category=join_channel_category,
         reason="User joined server, creating welcome channel.",
         overwrites={
+            guild.default_role:discord.PermissionOverwrite(read_messages=False, send_messages=False),
             member: discord.PermissionOverwrite(read_messages=True, send_messages=True),
             guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
         },
@@ -99,7 +96,7 @@ async def on_message(message: discord.Message) -> None:
         return
 
     chosen_team = ""
-    for team_name, password in load_passwords().items():
+    async for team_name, password in load_passwords(message.guild):
         if password in message.content.lower():
             logger.info(
                 f"'{message.author.name}' entered the correct password for {team_name}",
@@ -137,8 +134,8 @@ async def on_message(message: discord.Message) -> None:
         await channel.delete()
         logger.info(f"deleted channel '{channel.name}' because verification has completed.")
 
-
-async def load_passwords(guild: discord.Guild) -> Dict[str, str]:
+        
+async def load_passwords(guild : discord.Guild) -> AsyncGenerator[Tuple[str, str], None]:
     """
     Returns a mapping from role name to the password for that role.
 
@@ -153,12 +150,10 @@ async def load_passwords(guild: discord.Guild) -> Dict[str, str]:
         name=PASSWORDS_CHANNEL_NAME,
     )
     message: discord.Message
-    passwords = {}
     async for message in channel.history(limit=100, oldest_first=True):
         content: str = message.content.replace('`', '').strip()
         team, password = content.split(':')
-        passwords[team.strip()] = password.strip()
-    return passwords
+        yield team.strip(), password.strip()
 
 load_dotenv()
 client.run(os.getenv('DISCORD_TOKEN'))
