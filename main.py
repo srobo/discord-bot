@@ -105,8 +105,8 @@ async def on_message(message: discord.Message):
             role_name = f"{ROLE_PREFIX}{chosen_team}"
 
         # Add them to that specific role
-        role : discord.Role = discord.utils.get(message.guild.roles, name=role_name)
-        await message.author.add_roles(role, reason="Correct password for this role was entered.")
+        specific_role : discord.Role = discord.utils.get(message.guild.roles, name=role_name)
+        await message.author.add_roles(specific_role, reason="Correct password for this role was entered.")
 
         logger.info(f"gave user '{message.author.name}' the {role_name} role.")
         announce_channel : discord.TextChannel = discord.utils.get(message.guild.channels, name=ANNOUNCE_CHANNEL_NAME)
