@@ -52,9 +52,7 @@ jobs:
           name: Run Flake8
           command: |
             source venv/bin/activate
-            # Ignore TODOs on CI, for now, even though we do want them
-            # highlighted in development.
-            ./script/linting/lint --extend-ignore=T000
+            ./script/linting/lint
 
   typecheck:
     <<: *parametrised-python-executor
