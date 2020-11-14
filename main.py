@@ -61,6 +61,7 @@ async def on_member_join(member: discord.Member):
         category = join_channel_category,
         reason = "User joined server, creating welcome channel.",
         overwrites = {
+            guild.default_role:discord.PermissionOverwrite(read_messages=False, send_messages=False),
             member:discord.PermissionOverwrite(read_messages=True, send_messages=True),
             guild.me:discord.PermissionOverwrite(read_messages=True, send_messages=True)
         },
