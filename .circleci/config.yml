@@ -23,6 +23,11 @@ references:
     executor:
       name: python
       version: << parameters.version >>
+  python-target-version-only-matrix: &python-target-version-only-matrix
+    matrix:
+      parameters:
+        # Expected runtime is on Python 3.9
+        version: ["3.9"]
   python-top-and-bottom-version-matrix: &python-top-and-bottom-version-matrix
     matrix:
       parameters:
@@ -103,4 +108,4 @@ workflows:
       - typecheck:
           <<: *python-top-and-bottom-version-matrix
       - check-requirements:
-          <<: *python-top-and-bottom-version-matrix
+          <<: *python-target-version-only-matrix
