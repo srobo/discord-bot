@@ -43,6 +43,8 @@ SPECIAL_TEAM = "SRX"
 SPECIAL_TEAM_NAME = "Blue Shirts (a Volunteer!)"
 SPECIAL_ROLE = "Blue Shirt"
 
+PASSWORDS_CHANNEL_NAME = "role-passwords"
+
 @client.event
 async def on_ready():
     logger.info(f"{client.user} has connected to Discord!")
@@ -95,7 +97,6 @@ async def on_message(message: discord.Message):
             chosen_team = team_name
 
     if chosen_team:
-
         # Add them to the 'verified' role
         role : discord.Role = discord.utils.get(message.guild.roles, name=VERIFIED_ROLE)
         await message.author.add_roles(role, reason="A correct password was entered.")
@@ -117,29 +118,24 @@ async def on_message(message: discord.Message):
         await channel.delete()
         logger.info(f"deleted channel '{channel.name}' because verification has completed.")
 
-def load_passwords() -> Dict[str, str]:
+async def load_passwords(guild : discord.Guild) -> Dict[str, str]:
     """
-    Returns a mapping from role name to the password for that role
+    Returns a mapping from role name to the password for that role.
+    
+    Reads from the first message of the channel named {PASSWORDS_CHANNEL_NAME}.
+    The format should be as follows:
+    ```
+    teamname,password
+    ```    
     """
-    # TODO: pull this data from somewhere easier to edit.
-    passes = """
-BPV	footlambert
-CLY	transpicuous
-DCG	lotophagous
-ELC	forel
-HAB	viperiform
-HRS	quarkonium
-HWM	magistral
-MAI	undern
-RGS	muscariform
-SBH	eirenism
-SOG	quillaia
-SPA	cannonade
-SWI	advenient
-WAL	excalation
-WGS	kausia
-SRX	tallship"""
-    return dict([set(row.split("\t")) for row in passes.splitlines()[1:]])
+    channel : discord.TextChannel = discord.utils.get(guild.channels, name=PASSWORDS_CHANNEL_NAME)
+    message : discord.Message 
+    passwords = dict()
+    async for message in channel.history(limit=100, oldest_first=True):
+        content : str = message.content.replace('`','').strip()
+        team, password = content.split(':')
+        passwords[team.strip()] = password.strip()
+    return passwords
 
 load_dotenv()
 client.run(os.getenv('DISCORD_TOKEN'))
