@@ -9,6 +9,8 @@ The use case is as follows:
 
 See requirements.txt
 
+For development, see `script/requirements.txt`
+
 # Discord server set-up instructions
 - ensure the `everyone` role cannot see any channels by default.
 - Create a role named `verified` which can see the base channels (i.e. #general)
