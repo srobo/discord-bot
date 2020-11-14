@@ -3,8 +3,8 @@ import sys
 import logging
 from typing import Dict
 
-import discord
-import discord.utils
+import discord  # type: ignore[import]
+import discord.utils  # type: ignore[import]
 from dotenv import load_dotenv
 
 logger = logging.getLogger('srbot')
@@ -45,12 +45,12 @@ PASSWORDS_CHANNEL_NAME = "role-passwords"
 
 
 @client.event
-async def on_ready():
+async def on_ready() -> None:
     logger.info(f"{client.user} has connected to Discord!")
 
 
 @client.event
-async def on_member_join(member: discord.Member):
+async def on_member_join(member: discord.Member) -> None:
     name = member.display_name
     logger.info(f"Member {name} joined")
     guild: discord.Guild = member.guild
@@ -73,7 +73,7 @@ To gain access, you must send a message in this channel with the password for yo
 
 
 @client.event
-async def on_member_remove(member: discord.Member):
+async def on_member_remove(member: discord.Member) -> None:
     name = member.display_name
     logger.info(f"Member '{name}' left")
     join_channel_category: discord.CategoryChannel = discord.utils.get(
@@ -89,7 +89,7 @@ async def on_member_remove(member: discord.Member):
 
 
 @client.event
-async def on_message(message: discord.Message):
+async def on_message(message: discord.Message) -> None:
     channel: discord.TextChannel = message.channel
     if not channel.name.startswith(CHANNEL_PREFIX):
         return
@@ -115,7 +115,7 @@ async def on_message(message: discord.Message):
             role_name = f"{ROLE_PREFIX}{chosen_team}"
 
         # Add them to that specific role
-        role: discord.Role = discord.utils.get(message.guild.roles, name=role_name)
+        role = discord.utils.get(message.guild.roles, name=role_name)
         await message.author.add_roles(
             role,
             reason="Correct password for this role was entered.",
