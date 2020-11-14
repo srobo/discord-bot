@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import textwrap
 from typing import Dict
 
 import discord  # type: ignore[import]
@@ -65,10 +66,13 @@ async def on_member_join(member: discord.Member) -> None:
             guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
         },
     )
-    await channel.send(f"""Welcome {member.mention}!
-To gain access, you must send a message in this channel with the password for your group.
+    await channel.send(textwrap.dedent(
+        f"""Welcome {member.mention}!
+        To gain access, you must send a message in this channel with the password for your group.
 
-*Don't have the password? it should have been sent with this join link to your team leader*""")
+        *Don't have the password? it should have been sent with this join link to your team leader*
+        """,
+    ))
     logger.info(f"Created welcome channel for '{name}'")
 
 
