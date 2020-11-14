@@ -1,8 +1,8 @@
-import logging
 import os
 import sys
+import logging
 import textwrap
-from typing import AsyncGenerator, Tuple
+from typing import Tuple, AsyncGenerator
 
 import discord  # type: ignore[import]
 import discord.utils  # type: ignore[import]
