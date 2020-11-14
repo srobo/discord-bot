@@ -13,5 +13,4 @@ discord==1.0.1            # via -r requirements.in
 idna==2.10                # via yarl
 multidict==4.7.6          # via aiohttp, yarl
 python-dotenv==0.15.0     # via -r requirements.in
-typing-extensions==3.7.4.3  # via yarl
 yarl==1.5.1               # via aiohttp
