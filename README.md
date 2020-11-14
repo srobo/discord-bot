@@ -1,4 +1,7 @@
 # discord-gated-entry
+
+[![CircleCI](https://circleci.com/gh/srobo/discord-gated-entry.svg?style=svg)](https://circleci.com/gh/srobo/discord-gated-entry)
+
 A discord bot to gate the entry of a discord server on multiple passwords (each one giving a different role)
 
 The use case is as follows:
