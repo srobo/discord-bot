@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import textwrap
-from typing import Dict
+from typing import AsyncGenerator, Tuple
 
 import discord  # type: ignore[import]
 import discord.utils  # type: ignore[import]
@@ -58,7 +58,9 @@ async def on_member_join(member: discord.Member) -> None:
         category=join_channel_category,
         reason="User joined server, creating welcome channel.",
         overwrites={
-            guild.default_role:discord.PermissionOverwrite(read_messages=False, send_messages=False),
+            guild.default_role: discord.PermissionOverwrite(
+                read_messages=False,
+                send_messages=False),
             member: discord.PermissionOverwrite(read_messages=True, send_messages=True),
             guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
         },
@@ -134,8 +136,8 @@ async def on_message(message: discord.Message) -> None:
         await channel.delete()
         logger.info(f"deleted channel '{channel.name}' because verification has completed.")
 
-        
-async def load_passwords(guild : discord.Guild) -> AsyncGenerator[Tuple[str, str], None]:
+
+async def load_passwords(guild: discord.Guild) -> AsyncGenerator[Tuple[str, str], None]:
     """
     Returns a mapping from role name to the password for that role.
 
