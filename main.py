@@ -10,14 +10,10 @@ import discord.utils
 from dotenv import load_dotenv
 
 logger = logging.getLogger('srbot')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
+handler.setLevel(logging.INFO)
 logger.addHandler(handler)
-# Create file handler which logs even debug messages
-fh = logging.FileHandler('log.log')
-fh.setLevel(logging.DEBUG)
-logger.addHandler(fh)
 
 intents = discord.Intents.default()
 intents.members = True # Listen to member joins
