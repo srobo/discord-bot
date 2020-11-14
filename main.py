@@ -1,9 +1,7 @@
-import asyncio
-import logging
-import sys
 import os
-import re
-from typing import List, Set, Optional, Union, Dict
+import sys
+import logging
+from typing import Dict
 
 import discord
 import discord.utils
