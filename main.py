@@ -28,7 +28,7 @@ client = discord.Client(intents=intents)
 WELCOME_CATEGORY_NAME = "welcome"
 
 # Name of the channel to announce welcome messages to.
-ANNOUNCE_CHANNEL_NAME = "general"
+ANNOUNCE_CHANNEL_NAME = "say-hello"
 
 # prefix used to identify the channels to listen to passwords in.
 CHANNEL_PREFIX = "welcome-"
