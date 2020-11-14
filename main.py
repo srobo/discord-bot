@@ -82,13 +82,13 @@ async def on_member_remove(member: discord.Member):
         if channel.overwrites.keys() == set([member.guild.me]):
             await channel.delete()
             logger.info(f"Deleted channel '{channel.name}', because it has no users.")
-    
+
 @client.event
 async def on_message(message: discord.Message):
     channel : discord.TextChannel = message.channel
     if not channel.name.startswith(CHANNEL_PREFIX):
         return
-    
+
     chosen_team = ""
     for team_name, password in load_passwords().items():
         if password in message.content.lower():
@@ -121,15 +121,15 @@ async def on_message(message: discord.Message):
 async def load_passwords(guild : discord.Guild) -> Dict[str, str]:
     """
     Returns a mapping from role name to the password for that role.
-    
+
     Reads from the first message of the channel named {PASSWORDS_CHANNEL_NAME}.
     The format should be as follows:
     ```
     teamname,password
-    ```    
+    ```
     """
     channel : discord.TextChannel = discord.utils.get(guild.channels, name=PASSWORDS_CHANNEL_NAME)
-    message : discord.Message 
+    message : discord.Message
     passwords = dict()
     async for message in channel.history(limit=100, oldest_first=True):
         content : str = message.content.replace('`','').strip()
