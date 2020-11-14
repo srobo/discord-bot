@@ -125,7 +125,7 @@ async def load_passwords(guild : discord.Guild) -> Dict[str, str]:
     Reads from the first message of the channel named {PASSWORDS_CHANNEL_NAME}.
     The format should be as follows:
     ```
-    teamname,password
+    teamname:password
     ```
     """
     channel : discord.TextChannel = discord.utils.get(guild.channels, name=PASSWORDS_CHANNEL_NAME)
