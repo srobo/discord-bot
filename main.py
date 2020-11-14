@@ -3,7 +3,7 @@ import logging
 import sys
 import os
 import re
-from typing import List, Set, Optional, Union, Dict
+from typing import List, Set, Optional, Union, Dict, AsyncGenerator, Tuple
 
 import discord
 import discord.utils
@@ -90,7 +90,7 @@ async def on_message(message: discord.Message):
         return
     
     chosen_team = ""
-    for team_name, password in load_passwords().items():
+    async for team_name, password in load_passwords(message.guild):
         if password in message.content.lower():
             logger.info(f"'{message.author.name}' entered the correct password for {team_name}")
             # Password was correct!
@@ -118,7 +118,7 @@ async def on_message(message: discord.Message):
         await channel.delete()
         logger.info(f"deleted channel '{channel.name}' because verification has completed.")
 
-async def load_passwords(guild : discord.Guild) -> Dict[str, str]:
+async def load_passwords(guild : discord.Guild) -> AsyncGenerator[Tuple[str, str], None]:
     """
     Returns a mapping from role name to the password for that role.
     
@@ -130,12 +130,10 @@ async def load_passwords(guild : discord.Guild) -> Dict[str, str]:
     """
     channel : discord.TextChannel = discord.utils.get(guild.channels, name=PASSWORDS_CHANNEL_NAME)
     message : discord.Message 
-    passwords = dict()
     async for message in channel.history(limit=100, oldest_first=True):
         content : str = message.content.replace('`','').strip()
         team, password = content.split(':')
-        passwords[team.strip()] = password.strip()
-    return passwords
+        yield team.strip(), password.strip()
 
 load_dotenv()
 client.run(os.getenv('DISCORD_TOKEN'))
