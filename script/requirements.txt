@@ -5,11 +5,9 @@
 #    pip-compile script/requirements.in
 #
 aiohttp==3.6.3            # via -r script/../requirements.txt, discord.py
-async-lru==1.0.2          # via -r script/../requirements.txt
 async-timeout==3.0.1      # via -r script/../requirements.txt, aiohttp
 attrs==20.3.0             # via -r script/../requirements.txt, aiohttp
-certifi==2020.11.8        # via -r script/../requirements.txt, requests
-chardet==3.0.4            # via -r script/../requirements.txt, aiohttp, requests
+chardet==3.0.4            # via -r script/../requirements.txt, aiohttp
 click==7.1.2              # via pip-tools
 discord.py==1.5.1         # via -r script/../requirements.txt, discord
 discord==1.0.1            # via -r script/../requirements.txt
@@ -22,7 +20,7 @@ flake8-mutable==1.2.0     # via -r script/requirements.in
 flake8-todo==0.7          # via -r script/requirements.in
 flake8-tuple==0.4.1       # via -r script/requirements.in
 flake8==3.8.4             # via -r script/requirements.in, flake8-builtins, flake8-commas, flake8-comprehensions, flake8-debugger, flake8-isort, flake8-mutable, flake8-tuple
-idna==2.10                # via -r script/../requirements.txt, requests, yarl
+idna==2.10                # via -r script/../requirements.txt, yarl
 importlib-metadata==2.0.0  # via flake8, flake8-comprehensions
 isort==5.6.4              # via flake8-isort
 mccabe==0.6.1             # via flake8
@@ -33,12 +31,10 @@ pip-tools==5.3.1          # via -r script/requirements.in
 pycodestyle==2.6.0        # via flake8, flake8-debugger, flake8-todo
 pyflakes==2.2.0           # via flake8
 python-dotenv==0.15.0     # via -r script/../requirements.txt
-requests==2.25.0          # via -r script/../requirements.txt
 six==1.15.0               # via flake8-tuple, pip-tools
 testfixtures==6.15.0      # via flake8-isort
 typed-ast==1.4.1          # via mypy
 typing-extensions==3.7.4.3  # via -r script/../requirements.txt, mypy, yarl
-urllib3==1.26.2           # via -r script/../requirements.txt, requests
 yarl==1.5.1               # via -r script/../requirements.txt, aiohttp
 zipp==3.4.0               # via importlib-metadata
 
