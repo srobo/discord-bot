@@ -132,6 +132,7 @@ async def on_message(message: discord.Message) -> None:
                 f"Welcome {message.author.mention} from team {chosen_team}",
             )
             logger.info(f"Sent welcome announcement for '{message.author.name}'")
+
         await channel.delete()
         logger.info(f"deleted channel '{channel.name}' because verification has completed.")
 
