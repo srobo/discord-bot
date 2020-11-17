@@ -35,8 +35,7 @@ ROLE_PREFIX = "team-"
 VERIFIED_ROLE = "verified"
 
 SPECIAL_TEAM = "SRX"
-SPECIAL_TEAM_NAME = "Blue Shirts (a Volunteer!)"
-SPECIAL_ROLE = "Blue Shirt"
+SPECIAL_ROLE = "future-volunteer"
 
 PASSWORDS_CHANNEL_NAME = "role-passwords"
 
@@ -113,27 +112,27 @@ async def on_message(message: discord.Message) -> None:
 
         if chosen_team == SPECIAL_TEAM:
             role_name = SPECIAL_ROLE
-            team_name = SPECIAL_TEAM_NAME
         else:
             role_name = f"{ROLE_PREFIX}{chosen_team}"
 
         # Add them to that specific role
-
         specific_role = discord.utils.get(message.guild.roles, name=role_name)
         await message.author.add_roles(
             specific_role,
             reason="Correct password for this role was entered.",
         )
-
         logger.info(f"gave user '{message.author.name}' the {role_name} role.")
-        announce_channel: discord.TextChannel = discord.utils.get(
-            message.guild.channels,
-            name=ANNOUNCE_CHANNEL_NAME,
-        )
-        await announce_channel.send(
-            f"Welcome {message.author.mention} from team {chosen_team}",
-        )
-        logger.info(f"Sent welcome announcement for '{message.author.name}'")
+
+        if chosen_team != SPECIAL_TEAM:
+            announce_channel: discord.TextChannel = discord.utils.get(
+                message.guild.channels,
+                name=ANNOUNCE_CHANNEL_NAME,
+            )
+            await announce_channel.send(
+                f"Welcome {message.author.mention} from team {chosen_team}",
+            )
+            logger.info(f"Sent welcome announcement for '{message.author.name}'")
+
         await channel.delete()
         logger.info(f"deleted channel '{channel.name}' because verification has completed.")
 
