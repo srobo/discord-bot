@@ -1,0 +1,78 @@
+name: Validate & Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request: {}
+
+jobs:
+  run-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+
+    - name: Cache dependencies
+      uses: actions/cache@v2
+      id: cache-dep
+      with:
+        path: venv
+        key: deps-${{ hashfiles('script/requirements.txt') }}
+
+    - name: Install Dependencies
+      run: |
+        python3 -m venv venv
+        venv/bin/pip install -U pip wheel
+        venv/bin/pip install -r script/requirements.txt
+
+    - name: Lint with flake8
+      run: |
+        source venv/bin/activate
+        ./script/linting/lint
+
+    - name: Typecheck with Mypy
+      if: ${{ always() }}
+      run: |
+        source venv/bin/activate
+        ./script/typing/check
+
+  validate-requirements:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+
+    - name: Cache dependencies
+      uses: actions/cache@v2
+      id: cache-dep
+      with:
+        path: venv
+        key: deps-${{ hashfiles('script/requirements.txt') }}
+
+    - name: Install Dependencies
+      run: |
+        python3 -m venv venv
+        venv/bin/pip install -U pip wheel
+        venv/bin/pip install -r script/requirements.txt
+
+    - name: Check main dependencies
+      run: |
+        source venv/bin/activate
+        pip-compile && git diff --exit-code
+
+    - name: Check development dependencies
+      if: ${{ always() }}
+      run: |
+        source venv/bin/activate
+        pip-compile script/requirements.in && git diff --exit-code
