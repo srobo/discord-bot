@@ -20,7 +20,7 @@ chardet==3.0.4
     # via
     #   -r script/../requirements.txt
     #   aiohttp
-click==7.1.2
+click==8.0.3
     # via pip-tools
 discord==1.0.1
     # via -r script/../requirements.txt
@@ -28,7 +28,7 @@ discord.py==1.5.1
     # via
     #   -r script/../requirements.txt
     #   discord
-flake8==3.8.4
+flake8==4.0.1
     # via
     #   -r script/requirements.in
     #   flake8-builtins
@@ -40,13 +40,13 @@ flake8==3.8.4
     #   flake8-tuple
 flake8-builtins==1.5.3
     # via -r script/requirements.in
-flake8-commas==2.0.0
+flake8-commas==2.1.0
     # via -r script/requirements.in
-flake8-comprehensions==3.3.0
+flake8-comprehensions==3.7.0
     # via -r script/requirements.in
-flake8-debugger==3.2.1
+flake8-debugger==4.0.0
     # via -r script/requirements.in
-flake8-isort==4.0.0
+flake8-isort==4.1.1
     # via -r script/requirements.in
 flake8-mutable==1.2.0
     # via -r script/requirements.in
@@ -58,7 +58,7 @@ idna==2.10
     # via
     #   -r script/../requirements.txt
     #   yarl
-isort==5.6.4
+isort==5.9.3
     # via flake8-isort
 mccabe==0.6.1
     # via flake8
@@ -67,7 +67,7 @@ multidict==4.7.6
     #   -r script/../requirements.txt
     #   aiohttp
     #   yarl
-mypy==0.790
+mypy==0.910
     # via -r script/requirements.in
 mypy-extensions==0.4.3
     # via mypy
@@ -75,24 +75,26 @@ pep517==0.12.0
     # via pip-tools
 pip-tools==6.4.0
     # via -r script/requirements.in
-pycodestyle==2.6.0
+pycodestyle==2.8.0
     # via
     #   flake8
     #   flake8-debugger
     #   flake8-todo
-pyflakes==2.2.0
+pyflakes==2.4.0
     # via flake8
 python-dotenv==0.15.0
     # via -r script/../requirements.txt
-six==1.15.0
-    # via flake8-tuple
-testfixtures==6.15.0
+six==1.16.0
+    # via
+    #   flake8-debugger
+    #   flake8-tuple
+testfixtures==6.18.3
     # via flake8-isort
+toml==0.10.2
+    # via mypy
 tomli==1.2.2
     # via pep517
-typed-ast==1.4.1
-    # via mypy
-typing-extensions==3.7.4.3
+typing-extensions==3.10.0.2
     # via mypy
 wheel==0.37.0
     # via pip-tools
