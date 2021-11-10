@@ -23,7 +23,7 @@ jobs:
       id: cache-dep
       with:
         path: venv
-        key: deps-${{ hashfiles('script/requirements.txt') }}
+        key: deps-1-${{ hashfiles('script/requirements.txt') }}
 
     - name: Install Dependencies
       run: |
