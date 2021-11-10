@@ -110,10 +110,11 @@ async def on_message(message: discord.Message) -> None:
             role_name = SPECIAL_ROLE
         else:
             # Add them to the 'verified' role.
-            # This doesn't happen in special cases because we expect a second step (outside of this bot) before verifying them.
+            # This doesn't happen in special cases because we expect a second
+            # step (outside of this bot) before verifying them.
             role: discord.Role = discord.utils.get(message.guild.roles, name=VERIFIED_ROLE)
             await message.author.add_roles(role, reason="A correct password was entered.")
-            
+
             role_name = f"{ROLE_PREFIX}{chosen_team}"
 
         # Add them to that specific role
