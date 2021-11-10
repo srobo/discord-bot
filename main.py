@@ -35,7 +35,7 @@ ROLE_PREFIX = "team-"
 VERIFIED_ROLE = "verified"
 
 SPECIAL_TEAM = "SRX"
-SPECIAL_ROLE = "future-volunteer"
+SPECIAL_ROLE = "unverified-volunteer"
 
 PASSWORDS_CHANNEL_NAME = "role-passwords"
 
