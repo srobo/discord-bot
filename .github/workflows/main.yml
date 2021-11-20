@@ -25,7 +25,7 @@ jobs:
       uses: docker/build-push-action@v2
       id: docker_build
       with:
-        push: ${{ github.ref_name == '16/merge' }}
+        push: ${{ github.ref_name == 'main' }}
         tags: |
             ghcr.io/srobo/discord-gated-entry:build-${{ github.run_number }}
             ghcr.io/srobo/discord-gated-entry:latest
