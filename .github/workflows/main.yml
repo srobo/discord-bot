@@ -90,7 +90,7 @@ jobs:
     steps:
     - name: Log in to the Container registry
       uses: docker/login-action@v1.10.0
-      if: ${{ github.ref_name == 'main' }}
+      if: ${{ github.ref == 'refs/heads/main' }}
       with:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
@@ -100,7 +100,7 @@ jobs:
       uses: docker/build-push-action@v2
       id: docker_build
       with:
-        push: ${{ github.ref_name == 'main' }}
+        push: ${{ github.ref == 'refs/heads/main' }}
         tags: |
             ghcr.io/srobo/discord-gated-entry:build-${{ github.run_number }}
             ghcr.io/srobo/discord-gated-entry:latest
