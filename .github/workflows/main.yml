@@ -27,8 +27,8 @@ jobs:
       with:
         push: ${{ github.ref_name == '16/merge' }}
         tags: |
-            srobo/discord-gated-entry:build-${{ github.run_number }}
-            srobo/discord-gated-entry:latest
+            ghcr.io/srobo/discord-gated-entry:build-${{ github.run_number }}
+            ghcr.io/srobo/discord-gated-entry:latest
 
     - name: Image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
