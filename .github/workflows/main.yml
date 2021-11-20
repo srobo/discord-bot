@@ -24,7 +24,7 @@ jobs:
       with:
         push: ${{ github.ref == 'refs/heads/actions-docker' }}
         tags: |
-            srobo/discord-gated-entry:build-${{ github.run_id }}
+            srobo/discord-gated-entry:build-${{ github.run_number }}
             srobo/discord-gated-entry:latest
 
     - name: Image digest
