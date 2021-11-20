@@ -4,25 +4,27 @@
 #
 #    pip-compile
 #
-aiohttp==3.6.3
+aiohttp==3.7.4.post0
     # via discord.py
 async-timeout==3.0.1
     # via aiohttp
-attrs==20.3.0
+attrs==21.2.0
     # via aiohttp
-chardet==3.0.4
+chardet==4.0.0
     # via aiohttp
-discord==1.0.1
+discord==1.7.3
     # via -r requirements.in
-discord.py==1.5.1
+discord.py==1.7.3
     # via discord
-idna==2.10
+idna==3.3
     # via yarl
-multidict==4.7.6
+multidict==5.2.0
     # via
     #   aiohttp
     #   yarl
-python-dotenv==0.15.0
+python-dotenv==0.19.1
     # via -r requirements.in
-yarl==1.5.1
+typing-extensions==3.10.0.2
+    # via aiohttp
+yarl==1.7.2
     # via aiohttp

@@ -4,7 +4,7 @@
 #
 #    pip-compile script/requirements.in
 #
-aiohttp==3.6.3
+aiohttp==3.7.4.post0
     # via
     #   -r script/../requirements.txt
     #   discord.py
@@ -12,19 +12,19 @@ async-timeout==3.0.1
     # via
     #   -r script/../requirements.txt
     #   aiohttp
-attrs==20.3.0
+attrs==21.2.0
     # via
     #   -r script/../requirements.txt
     #   aiohttp
-chardet==3.0.4
+chardet==4.0.0
     # via
     #   -r script/../requirements.txt
     #   aiohttp
 click==8.0.3
     # via pip-tools
-discord==1.0.1
+discord==1.7.3
     # via -r script/../requirements.txt
-discord.py==1.5.1
+discord.py==1.7.3
     # via
     #   -r script/../requirements.txt
     #   discord
@@ -54,7 +54,7 @@ flake8-todo==0.7
     # via -r script/requirements.in
 flake8-tuple==0.4.1
     # via -r script/requirements.in
-idna==2.10
+idna==3.3
     # via
     #   -r script/../requirements.txt
     #   yarl
@@ -62,7 +62,7 @@ isort==5.9.3
     # via flake8-isort
 mccabe==0.6.1
     # via flake8
-multidict==4.7.6
+multidict==5.2.0
     # via
     #   -r script/../requirements.txt
     #   aiohttp
@@ -82,7 +82,7 @@ pycodestyle==2.8.0
     #   flake8-todo
 pyflakes==2.4.0
     # via flake8
-python-dotenv==0.15.0
+python-dotenv==0.19.1
     # via -r script/../requirements.txt
 six==1.16.0
     # via
@@ -95,10 +95,13 @@ toml==0.10.2
 tomli==1.2.2
     # via pep517
 typing-extensions==3.10.0.2
-    # via mypy
+    # via
+    #   -r script/../requirements.txt
+    #   aiohttp
+    #   mypy
 wheel==0.37.0
     # via pip-tools
-yarl==1.5.1
+yarl==1.7.2
     # via
     #   -r script/../requirements.txt
     #   aiohttp
