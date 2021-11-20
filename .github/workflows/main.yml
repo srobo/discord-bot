@@ -14,22 +14,21 @@ jobs:
       packages: write
 
     steps:
-      - name: Log in to the Container registry
-        uses: docker/login-action@v1.10.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Log in to the Container registry
+      uses: docker/login-action@v1.10.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v3.5.0
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: type=raw,value=latest
+    - name: Build & maybe Push Container
+      uses: docker/build-push-action@v2
+      id: docker_build
+      with:
+        push: ${{ github.ref_name == '16/merge' }}
+        tags: |
+            srobo/discord-gated-entry:build-${{ github.run_number }}
+            srobo/discord-gated-entry:latest
 
-      - name: Build and push
-        uses: docker/build-push-action@v2.7.0
-        with:
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+    - name: Image digest
+      run: echo ${{ steps.docker_build.outputs.digest }}
