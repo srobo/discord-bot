@@ -24,7 +24,7 @@ multidict==5.2.0
     #   yarl
 python-dotenv==0.19.1
     # via -r requirements.in
-typing-extensions==3.10.0.2
+typing-extensions==4.7.1
     # via aiohttp
 yarl==1.7.2
     # via aiohttp

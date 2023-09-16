@@ -94,7 +94,7 @@ toml==0.10.2
     # via mypy
 tomli==1.2.2
     # via pep517
-typing-extensions==3.10.0.2
+typing-extensions==4.7.1
     # via
     #   -r script/../requirements.txt
     #   aiohttp
