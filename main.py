@@ -34,7 +34,7 @@ ROLE_PREFIX = "team-"
 # role to give user if they have correctly entered *any* password
 VERIFIED_ROLE = "verified"
 
-SPECIAL_TEAM = "SRX"
+SPECIAL_TEAM = "SRZ"
 SPECIAL_ROLE = "unverified-volunteer"
 
 PASSWORDS_CHANNEL_NAME = "role-passwords"
