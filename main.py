@@ -16,6 +16,7 @@ logger.addHandler(handler)
 
 intents = discord.Intents.default()
 intents.members = True  # Listen to member joins
+intents.message_content = True  # Read the contents of messages
 
 client = discord.Client(intents=intents)
 
