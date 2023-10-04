@@ -2,7 +2,8 @@
 
 [![CircleCI](https://circleci.com/gh/srobo/discord-gated-entry.svg?style=svg)](https://circleci.com/gh/srobo/discord-gated-entry)
 
-A discord bot to gate the entry of a discord server on multiple passwords (each one giving a different role)
+A discord bot to gate the entry of a discord server on multiple passwords (each one giving a different role).
+This has some special hard-coded cases for the Student Robotics competition, especially with regards to having a special passwor
 
 The use case is as follows:
 
@@ -21,7 +22,8 @@ For development, see `script/requirements.txt`
 - Create a role named `verified` which can see the base channels (i.e. #general)
 - Create a role named `unverified-volunteer` which can see the volunteer onboarding channel.
 - Create a new channel category called 'welcome', block all users from reading this category in its permissions.
-- Create another channel, visible only to the admins, named '#role-passwords', enter in it 1 message per role in the form `role : password`. Special case: for the `unverified-volunteer` role, please use the role name `team-SRZ`.
+- **Explicitly allow the bot to view this category**.
+- Create another channel, visible only to the admins, named '#role-passwords', enter in it **individual messages** in the form `role : password`. Special case: for the `unverified-volunteer` role, please use the role name `team-SRZ`.
 - Create each role named `team-{role}`.
 
 And voila, any new users should automatically get their role assigned once they enter the correct password.
