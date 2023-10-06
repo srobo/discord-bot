@@ -92,6 +92,9 @@ async def on_member_remove(member: discord.Member) -> None:
 
 @client.event
 async def on_message(message: discord.Message) -> None:
+    if not isinstance(message.channel, discord.TextChannel):
+        return
+
     channel: discord.TextChannel = message.channel
     if not channel.name.startswith(CHANNEL_PREFIX):
         return
