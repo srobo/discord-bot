@@ -23,3 +23,7 @@ PASSWORDS_CHANNEL_NAME = "role-passwords"
 TEAM_CATEGORY_NAME = "Team Channels"
 TEAM_VOICE_CATEGORY_NAME = "Team Voice Channels"
 TEAM_LEADER_ROLE = "Team Supervisor"
+
+FEED_URL = "https://studentrobotics.org/feed.xml"
+FEED_CHANNEL_NAME = "blog"
+FEED_CHECK_INTERVAL = 10  # seconds
