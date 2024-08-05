@@ -3,7 +3,7 @@ import textwrap
 import discord
 import logging
 
-from .constants import *
+from constants import *
 from typing import Tuple, AsyncGenerator
 
 
