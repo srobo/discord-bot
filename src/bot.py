@@ -15,6 +15,7 @@ from src.constants import (
     ANNOUNCE_CHANNEL_NAME,
     WELCOME_CATEGORY_NAME,
     PASSWORDS_CHANNEL_NAME,
+    FEED_CHECK_INTERVAL,
 )
 from src.commands.join import join
 from src.commands.team import (
@@ -25,6 +26,10 @@ from src.commands.team import (
     create_voice,
     create_team_channel,
 )
+
+from discord.ext import tasks
+
+from src.rss import check_posts
 
 
 class BotClient(discord.Client):
@@ -65,6 +70,9 @@ class BotClient(discord.Client):
         # This copies the global commands over to your guild.
         self.tree.copy_global_to(guild=self.guild)
         await self.tree.sync(guild=self.guild)
+
+    async def setup_hook(self) -> None:
+        self.check_for_new_blog_posts.start()
 
     async def on_ready(self) -> None:
         self.logger.info(f"{self.user} has connected to Discord!")
@@ -133,6 +141,16 @@ class BotClient(discord.Client):
             if channel.overwrites.keys() == {member.guild.default_role, member.guild.me}:
                 await channel.delete()
                 self.logger.info(f"Deleted channel '{channel.name}', because it has no users.")
+
+    @tasks.loop(seconds=FEED_CHECK_INTERVAL)
+    async def check_for_new_blog_posts(self):
+        self.logger.info("Checking for new blog posts")
+        await check_posts(self.get_guild(int(os.getenv('DISCORD_GUILD_ID'))))
+
+    @check_for_new_blog_posts.before_loop
+    async def before_check_for_new_blog_posts(self):
+        await self.wait_until_ready()
+
 
     async def load_passwords(self) -> AsyncGenerator[Tuple[str, str], None]:
         """
