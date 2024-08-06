@@ -2,9 +2,12 @@ import os
 import asyncio
 import logging
 import textwrap
-from typing import Tuple, AsyncGenerator
 
 import discord
+
+from discord import app_commands
+
+from typing import Tuple, AsyncGenerator
 
 from src.constants import (
     ROLE_PREFIX,
@@ -16,6 +19,8 @@ from src.constants import (
     WELCOME_CATEGORY_NAME,
     PASSWORDS_CHANNEL_NAME,
 )
+
+from src.commands.new_team import new_team
 
 
 class BotClient(discord.Client):
@@ -36,11 +41,18 @@ class BotClient(discord.Client):
     ):
         super().__init__(loop=loop, intents=intents)
         self.logger = logger
+        self.tree = app_commands.CommandTree(self)
         guild_id = os.getenv('DISCORD_GUILD_ID')
         if guild_id is None or not guild_id.isnumeric():
             logger.error("Invalid guild ID")
             exit(1)
         self.guild = discord.Object(id=int())
+        self.tree.add_command(new_team, guild=self.guild)
+
+    async def setup_hook(self):
+        # This copies the global commands over to your guild.
+        self.tree.copy_global_to(guild=self.guild)
+        await self.tree.sync(guild=self.guild)
 
     async def on_ready(self) -> None:
         self.logger.info(f"{self.user} has connected to Discord!")

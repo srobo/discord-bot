@@ -17,3 +17,5 @@ SPECIAL_TEAM = "SRZ"
 SPECIAL_ROLE = "unverified-volunteer"
 
 PASSWORDS_CHANNEL_NAME = "role-passwords"
+
+TEAM_CATEGORY_NAME = "team channels"
