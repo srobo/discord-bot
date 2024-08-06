@@ -1,5 +1,5 @@
 # name of the category for new welcome channels to go.
-WELCOME_CATEGORY_NAME = "welcome"
+WELCOME_CATEGORY_NAME = "Welcome"
 
 # Name of the channel to announce welcome messages to.
 ANNOUNCE_CHANNEL_NAME = "say-hello"
@@ -18,4 +18,4 @@ SPECIAL_ROLE = "Unverified Volunteer"
 
 PASSWORDS_CHANNEL_NAME = "role-passwords"
 
-TEAM_CATEGORY_NAME = "team channels"
+TEAM_CATEGORY_NAME = "Team Channels"
