@@ -8,7 +8,7 @@ ANNOUNCE_CHANNEL_NAME = "say-hello"
 CHANNEL_PREFIX = "welcome-"
 
 # prefix of the role to give the user once the password succeeds
-ROLE_PREFIX = "team-"
+ROLE_PREFIX = "Team "
 
 # role to give user if they have correctly entered *any* password
 VERIFIED_ROLE = "verified"

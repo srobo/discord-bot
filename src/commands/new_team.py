@@ -2,7 +2,7 @@ import discord
 from discord import app_commands, interactions
 from discord.app_commands import locale_str
 
-from src.constants import TEAM_CATEGORY_NAME, PASSWORDS_CHANNEL_NAME
+from src.constants import TEAM_CATEGORY_NAME, PASSWORDS_CHANNEL_NAME, ROLE_PREFIX
 
 REASON = "Created via command"
 
@@ -22,13 +22,19 @@ REASON = "Created via command"
 async def new_team(interaction: discord.interactions.Interaction, tla: str, name: str, password: str):
     guild: discord.Guild = interaction.guild
     category = discord.utils.get(guild.categories, name=TEAM_CATEGORY_NAME)
+    role_name = f"{ROLE_PREFIX}{tla.upper()}"
+
+    if discord.utils.get(guild.roles, name=role_name) is not None:
+        await interaction.response.send_message(f"{role_name} already exists", ephemeral=True)
+        return
+
     role = await guild.create_role(
         reason=REASON,
-        name=f"Team {tla.upper()}",
+        name=role_name,
     )
     channel = await guild.create_text_channel(
         reason=REASON,
-        name=f"Team {tla.upper()}",
+        name=f"team-{tla}",
         topic=name,
         category=category,
         overwrites={
@@ -39,7 +45,7 @@ async def new_team(interaction: discord.interactions.Interaction, tla: str, name
         }
     )
     await _save_password(guild, tla, password)
-    await interaction.response.send_message(f"Team {tla.upper()} created!")
+    await interaction.response.send_message(f"<@&{role.id}> and <#{channel.id}> created!", ephemeral=True)
 
 
 async def _save_password(guild: discord.Guild, tla: str, password: str):
