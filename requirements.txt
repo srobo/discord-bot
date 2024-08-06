@@ -14,10 +14,8 @@ async-timeout==4.0.3
     # via aiohttp
 attrs==24.1.0
     # via aiohttp
-discord==2.3.2
-    # via -r requirements.in
 discord-py==2.4.0
-    # via discord
+    # via -r requirements.in
 frozenlist==1.4.1
     # via
     #   aiohttp
