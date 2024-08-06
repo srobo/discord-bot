@@ -11,10 +11,10 @@ CHANNEL_PREFIX = "welcome-"
 ROLE_PREFIX = "Team "
 
 # role to give user if they have correctly entered *any* password
-VERIFIED_ROLE = "verified"
+VERIFIED_ROLE = "Verified"
 
 SPECIAL_TEAM = "SRZ"
-SPECIAL_ROLE = "unverified-volunteer"
+SPECIAL_ROLE = "Unverified Volunteer"
 
 PASSWORDS_CHANNEL_NAME = "role-passwords"
 
