@@ -17,19 +17,21 @@ For development, see `script/requirements.txt`
 
 # Discord server set-up instructions
 
-- ensure the `everyone` role cannot see any channels by default.
-- Create a role named `verified` which can see the base channels (i.e. #general)
-- Create a role named `unverified-volunteer` which can see the volunteer onboarding channel.
+- ensure the `@everyone` role cannot see any channels by default.
+- Create a role named `Verified` which can see the base channels (i.e. #general)
+- Create a role named `Unverified Volunteer` which can see the volunteer onboarding channel.
+- Create a role named `Blueshirt`.
 - Create a new channel category called 'welcome', block all users from reading this category in its permissions.
-- Create another channel, visible only to the admins, named '#role-passwords', enter in it 1 message per role in the form `role : password`. Special case: for the `unverified-volunteer` role, please use the role name `team-SRZ`.
-- Create each role named `team-{role}`.
+- Create another channel, visible only to the admins, named '#role-passwords', enter in it 1 message per role in the form `role : password`. Special case: for the `Unverified Volunteer` role, please use the role name `Team SRZ`.
+- Create each role named `Team {role}`.
 
-And voila, any new users should automatically get their role assigned once they enter the correct password.
+And voilà, any new users should automatically get their role assigned once they enter the correct password.
 
 ## Install instructions
 
 1. Set up discord to the correct settings (see above)
 2. Register a discord bot.
-3. Add an .env file with `DISCORD_TOKEN=<bot-token>`
+3. Copy `.env` and fill it out with the application token and guild ID. In order to get the guild ID, you will need to enable developer mode in Discord's settings. Once enabled, right click the guild (server) in the sidebar and click `Copy Server ID`.
 4. `pip install -r requirements.txt`
-5. `python main.py`
+5. `python src/main.py`
+6. In the server settings, ensure the `/join` command cannot be used by the `Verified` role
