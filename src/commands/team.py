@@ -18,6 +18,7 @@ REASON = "Created via command"
 
 
 @app_commands.guild_only()
+@app_commands.default_permissions()
 class Team(app_commands.Group):
     pass
 
