@@ -2,8 +2,6 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
-from discord.app_commands import locale_str
-import discord.ext.commands as commands
 
 if TYPE_CHECKING:
     from src.bot import BotClient
@@ -14,7 +12,7 @@ from src.constants import (
     PASSWORDS_CHANNEL_NAME,
 )
 
-REASON = "Created via command"
+REASON = "Created via command by "
 
 
 @app_commands.guild_only()
@@ -50,11 +48,11 @@ async def new_team(interaction: discord.interactions.Interaction["BotClient"], t
         return
 
     role = await guild.create_role(
-        reason=REASON,
+        reason=REASON + interaction.user.name,
         name=role_name,
     )
     channel = await guild.create_text_channel(
-        reason=REASON,
+        reason=REASON + interaction.user.name,
         name=f"team-{tla.lower()}",
         topic=name,
         category=category,
