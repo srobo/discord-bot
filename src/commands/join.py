@@ -28,6 +28,10 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
     if member is None or isinstance(member, discord.User):
         return
 
+    if interaction.guild is None or not isinstance(interaction.channel, discord.TextChannel):
+        return
+    guild: discord.Guild = interaction.guild
+
     channel: discord.TextChannel = interaction.channel
     if channel is None or not channel.name.startswith(CHANNEL_PREFIX):
         return
@@ -49,7 +53,7 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
             role_name = f"{ROLE_PREFIX}{chosen_team}"
 
         # Add them to that specific role
-        specific_role = discord.utils.get(interaction.client.guild.roles, name=role_name)
+        specific_role = discord.utils.get(guild.roles, name=role_name)
         if specific_role is None:
             interaction.client.logger.error(f"Specified role '{chosen_team}' does not exist")
         else:
@@ -74,7 +78,7 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
         await interaction.response.send_message("Incorrect password.", ephemeral=True)
 
 
-async def find_team(client: "BotClient", member: discord.Member, entered: str) -> str:
+async def find_team(client: "BotClient", member: discord.Member, entered: str) -> str | None:
     async for team_name, password in client.load_passwords():
         if password in entered.lower():
             client.logger.info(
@@ -82,3 +86,4 @@ async def find_team(client: "BotClient", member: discord.Member, entered: str) -
             )
             # Password was correct!
             return team_name
+    return None
