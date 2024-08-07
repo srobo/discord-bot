@@ -6,6 +6,7 @@ from typing import Tuple, AsyncGenerator
 
 import discord
 from discord import app_commands
+from discord.app_commands import locale_str
 
 from src.constants import (
     SPECIAL_ROLE,
@@ -17,7 +18,7 @@ from src.constants import (
     PASSWORDS_CHANNEL_NAME,
 )
 from src.commands.join import join
-from src.commands.new_team import new_team
+from src.commands.team import new_team
 
 
 class BotClient(discord.Client):

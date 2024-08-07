@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
+from discord.app_commands import locale_str
+import discord.ext.commands as commands
 
 if TYPE_CHECKING:
     from src.bot import BotClient
@@ -15,19 +17,25 @@ from src.constants import (
 REASON = "Created via command"
 
 
-@discord.app_commands.command(
-    name='team_new',
+@app_commands.guild_only()
+class Team(app_commands.Group):
+    pass
+
+
+group = Team()
+
+
+@group.command(
+    name='new',
     description='Creates a role and channel for a team',
-    extras={
-        'default_member_permissions': 0,
-    },
 )
 @app_commands.describe(
     tla='Three Letter Acronym (e.g. SRZ)',
     name='Name of the team',
     password="Password required for joining the team",
 )
-async def new_team(interaction: discord.interactions.Interaction["BotClient"], tla: str, name: str, password: str) -> None:
+async def new_team(interaction: discord.interactions.Interaction["BotClient"], tla: str, name: str,
+                   password: str) -> None:
     guild: discord.Guild | None = interaction.guild
     if guild is None:
         await interaction.response.send_message("No guild found", ephemeral=True)
