@@ -2,12 +2,10 @@ import os
 import asyncio
 import logging
 import textwrap
+from typing import Tuple, AsyncGenerator
 
 import discord
-
 from discord import app_commands
-
-from typing import Tuple, AsyncGenerator
 
 from src.constants import (
     ROLE_PREFIX,
@@ -19,13 +17,13 @@ from src.constants import (
     WELCOME_CATEGORY_NAME,
     PASSWORDS_CHANNEL_NAME,
 )
-
+from src.commands.join import join
 from src.commands.new_team import new_team
 
 
 class BotClient(discord.Client):
     logger: logging.Logger
-    guild: discord.Object
+    guild: discord.Guild | discord.Object
     verified_role: discord.Role
     special_role: discord.Role
     welcome_category: discord.CategoryChannel
@@ -46,10 +44,11 @@ class BotClient(discord.Client):
         if guild_id is None or not guild_id.isnumeric():
             logger.error("Invalid guild ID")
             exit(1)
-        self.guild = discord.Object(id=int())
+        self.guild = discord.Object(id=int(guild_id))
         self.tree.add_command(new_team, guild=self.guild)
+        self.tree.add_command(join, guild=self.guild)
 
-    async def setup_hook(self):
+    async def setup_hook(self) -> None:
         # This copies the global commands over to your guild.
         self.tree.copy_global_to(guild=self.guild)
         await self.tree.sync(guild=self.guild)
@@ -60,6 +59,7 @@ class BotClient(discord.Client):
         if guild is None:
             logging.error(f"Guild {self.guild.id} not found!")
             exit(1)
+        self.guild = guild
 
         verified_role = discord.utils.get(guild.roles, name=VERIFIED_ROLE)
         special_role = discord.utils.get(guild.roles, name=SPECIAL_ROLE)
@@ -118,62 +118,7 @@ class BotClient(discord.Client):
                 await channel.delete()
                 self.logger.info(f"Deleted channel '{channel.name}', because it has no users.")
 
-    async def on_message(self, message: discord.Message) -> None:
-        if not isinstance(message.channel, discord.TextChannel):
-            return
-        channel: discord.TextChannel = message.channel
-        if channel is None or message.guild is None or not channel.name.startswith(CHANNEL_PREFIX):
-            return
-        if isinstance(message.author, discord.User):
-            return
-
-        chosen_team = ""
-        async for team_name, password in self.load_passwords(message.guild):
-            if password in message.content.lower():
-                self.logger.info(
-                    f"'{message.author.name}' entered the correct password for {team_name}",
-                )
-                # Password was correct!
-                chosen_team = team_name
-
-        if chosen_team:
-            if chosen_team == SPECIAL_TEAM:
-                role_name = SPECIAL_ROLE
-            else:
-                # Add them to the 'verified' role.
-                # This doesn't happen in special cases because we expect a second
-                # step (outside of this bot) before verifying them.
-
-                await message.author.add_roles(
-                    self.verified_role,
-                    reason="A correct password was entered.",
-                )
-
-                role_name = f"{ROLE_PREFIX}{chosen_team}"
-
-            # Add them to that specific role
-            specific_role = discord.utils.get(message.guild.roles, name=role_name)
-            if specific_role is None:
-                self.logger.error(f"Specified role '{chosen_team}' does not exist")
-            else:
-                await message.author.add_roles(
-                    specific_role,
-                    reason="Correct password for this role was entered.",
-                )
-                self.logger.info(f"gave user '{message.author.name}' the {role_name} role.")
-
-            if chosen_team != SPECIAL_TEAM:
-                await self.announce_channel.send(
-                    f"Welcome {message.author.mention} from team {chosen_team}",
-                )
-                self.logger.info(f"Sent welcome announcement for '{message.author.name}'")
-
-            await channel.delete()
-            self.logger.info(
-                f"deleted channel '{channel.name}' because verification has completed.",
-            )
-
-    async def load_passwords(self, guild: discord.Guild) -> AsyncGenerator[Tuple[str, str], None]:
+    async def load_passwords(self) -> AsyncGenerator[Tuple[str, str], None]:
         """
         Returns a mapping from role name to the password for that role.
 
@@ -185,6 +130,7 @@ class BotClient(discord.Client):
         """
         message: discord.Message
         async for message in self.passwords_channel.history(limit=100, oldest_first=True):
-            content: str = message.content.replace('`', '').strip()
-            team, password = content.split(':')
-            yield team.strip(), password.strip()
+            if message.content.startswith('```'):
+                content: str = message.content.replace('`', '').strip()
+                team, password = content.split(':')
+                yield team.strip(), password.strip()
