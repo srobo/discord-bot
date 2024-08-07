@@ -6,7 +6,12 @@ from discord import app_commands
 if TYPE_CHECKING:
     from src.bot import BotClient
 
-from src.constants import CHANNEL_PREFIX, SPECIAL_TEAM, SPECIAL_ROLE, ROLE_PREFIX
+from src.constants import (
+    ROLE_PREFIX,
+    SPECIAL_ROLE,
+    SPECIAL_TEAM,
+    CHANNEL_PREFIX,
+)
 
 REASON = "A correct password was entered."
 
@@ -66,7 +71,7 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
             f"deleted channel '{channel.name}' because verification has completed.",
         )
     else:
-        interaction.response.send_message("Incorrect password.", ephemeral=True)
+        await interaction.response.send_message("Incorrect password.", ephemeral=True)
 
 
 async def find_team(client: "BotClient", member: discord.Member, entered: str) -> str:
