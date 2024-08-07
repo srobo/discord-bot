@@ -8,11 +8,10 @@ import discord
 from discord import app_commands
 
 from src.constants import (
-    ROLE_PREFIX,
     SPECIAL_ROLE,
-    SPECIAL_TEAM,
     VERIFIED_ROLE,
     CHANNEL_PREFIX,
+    VOLUNTEER_ROLE,
     ANNOUNCE_CHANNEL_NAME,
     WELCOME_CATEGORY_NAME,
     PASSWORDS_CHANNEL_NAME,
@@ -26,6 +25,7 @@ class BotClient(discord.Client):
     guild: discord.Guild | discord.Object
     verified_role: discord.Role
     special_role: discord.Role
+    volunteer_role: discord.Role
     welcome_category: discord.CategoryChannel
     announce_channel: discord.TextChannel
     passwords_channel: discord.TextChannel
@@ -63,6 +63,7 @@ class BotClient(discord.Client):
 
         verified_role = discord.utils.get(guild.roles, name=VERIFIED_ROLE)
         special_role = discord.utils.get(guild.roles, name=SPECIAL_ROLE)
+        volunteer_role = discord.utils.get(guild.roles, name=VOLUNTEER_ROLE)
         welcome_category = discord.utils.get(guild.categories, name=WELCOME_CATEGORY_NAME)
         announce_channel = discord.utils.get(guild.text_channels, name=ANNOUNCE_CHANNEL_NAME)
         passwords_channel = discord.utils.get(guild.text_channels, name=PASSWORDS_CHANNEL_NAME)
@@ -70,6 +71,7 @@ class BotClient(discord.Client):
         if (
             verified_role is None
             or special_role is None
+            or volunteer_role is None
             or welcome_category is None
             or announce_channel is None
             or passwords_channel is None
@@ -79,6 +81,7 @@ class BotClient(discord.Client):
         else:
             self.verified_role = verified_role
             self.special_role = special_role
+            self.volunteer_role = volunteer_role
             self.welcome_category = welcome_category
             self.announce_channel = announce_channel
             self.passwords_channel = passwords_channel

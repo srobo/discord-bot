@@ -16,6 +16,8 @@ VERIFIED_ROLE = "Verified"
 SPECIAL_TEAM = "SRZ"
 SPECIAL_ROLE = "Unverified Volunteer"
 
+VOLUNTEER_ROLE = "Blueshirt"
+
 PASSWORDS_CHANNEL_NAME = "role-passwords"
 
 TEAM_CATEGORY_NAME = "Team Channels"
