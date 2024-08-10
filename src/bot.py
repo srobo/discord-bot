@@ -109,7 +109,7 @@ class BotClient(discord.Client):
         )
         await channel.send(textwrap.dedent(
             f"""Welcome {member.mention}!
-            To gain access, you must send a message in this channel with the password for your group.
+            To gain access, you must use `/join` with the password for your group.
 
             *Don't have the password? it should have been sent with this join link to your team leader*
             """,
