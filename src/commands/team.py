@@ -119,6 +119,12 @@ async def delete_team(interaction: discord.interactions.Interaction["BotClient"]
                 await member.kick(reason=reason)
             await channel.delete(reason=reason)
             await role.delete(reason=reason)
+
+            voice_channel: discord.VoiceChannel | None = discord.utils.get(guild.voice_channels,
+                                                                           name=f"team-{tla.lower()}")
+            if voice_channel is not None:
+                await voice_channel.delete()
+
             await interaction.edit_original_response(content=f"Team {tla.upper()} has been deleted")
 
 
