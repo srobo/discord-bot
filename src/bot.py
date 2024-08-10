@@ -6,7 +6,6 @@ from typing import Tuple, AsyncGenerator
 
 import discord
 from discord import app_commands
-from discord.app_commands import locale_str
 
 from src.constants import (
     SPECIAL_ROLE,
@@ -18,7 +17,7 @@ from src.constants import (
     PASSWORDS_CHANNEL_NAME,
 )
 from src.commands.join import join
-from src.commands.team import new_team
+from src.commands.team import Team, new_team, delete_team
 
 
 class BotClient(discord.Client):
@@ -46,7 +45,10 @@ class BotClient(discord.Client):
             logger.error("Invalid guild ID")
             exit(1)
         self.guild = discord.Object(id=int(guild_id))
-        self.tree.add_command(new_team, guild=self.guild)
+        team = Team()
+        team.add_command(new_team)
+        team.add_command(delete_team)
+        self.tree.add_command(team, guild=self.guild)
         self.tree.add_command(join, guild=self.guild)
 
     async def setup_hook(self) -> None:
