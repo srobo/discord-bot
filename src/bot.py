@@ -121,7 +121,7 @@ class BotClient(discord.Client):
         self.logger.info(f"Member '{name}' left")
         for channel in self.welcome_category.channels:
             # If the only user able to see it is the bot, then delete it.
-            if channel.overwrites.keys() == {member.guild.me}:
+            if channel.overwrites.keys() == {member.guild.default_role, member.guild.me}:
                 await channel.delete()
                 self.logger.info(f"Deleted channel '{channel.name}', because it has no users.")
 
