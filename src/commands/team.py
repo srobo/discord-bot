@@ -111,7 +111,7 @@ async def delete_team(interaction: discord.interactions.Interaction["BotClient"]
         reason = f"Team removed by {interaction.user.name}"
         if channel is not None and role is not None:
             for member in role.members:
-                await member.send(f"Your {guild.name} has been removed.")
+                await member.send(f"Your {guild.name} team has been removed.")
                 await member.kick(reason=reason)
             await channel.delete(reason=reason)
             await role.delete(reason=reason)
