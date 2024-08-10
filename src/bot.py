@@ -17,7 +17,7 @@ from src.constants import (
     PASSWORDS_CHANNEL_NAME,
 )
 from src.commands.join import join
-from src.commands.team import Team, new_team, delete_team, create_voice
+from src.commands.team import Team, new_team, delete_team, create_voice, create_team_channel
 
 
 class BotClient(discord.Client):
@@ -49,6 +49,7 @@ class BotClient(discord.Client):
         team.add_command(new_team)
         team.add_command(delete_team)
         team.add_command(create_voice)
+        team.add_command(create_team_channel)
         self.tree.add_command(team, guild=self.guild)
         self.tree.add_command(join, guild=self.guild)
 
