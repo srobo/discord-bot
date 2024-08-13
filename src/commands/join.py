@@ -79,6 +79,13 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
 
 
 def find_team(client: "BotClient", member: discord.Member, entered: str) -> str | None:
+    entered = (entered.lower()
+               .replace(" ", "-")
+               .replace("_", "-")
+               # German layout typos:
+               .replace("/", "-")
+               .replace("ß", "-"))
+
     for team_name, password in client.passwords.items():
         if entered == password:
             client.logger.info(
