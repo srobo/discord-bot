@@ -44,14 +44,20 @@ class SubscribedMessage(NamedTuple):
         )
 
 
-@app_commands.command()
+@app_commands.guild_only()
+@app_commands.default_permissions()
+class Stats(app_commands.Group):
+    pass
+
+
+@app_commands.command(name='post')
 @app_commands.describe(
     members='Display the number of members in each team',
     warnings='Display warnings about missing supervisors and empty teams',
     stats='Display statistics about the teams',
 )
 @app_commands.checks.has_role(VOLUNTEER_ROLE)
-async def stats(
+async def post_stats(
     ctx: discord.interactions.Interaction["BotClient"],
     members: bool = False,
     warnings: bool = False,
@@ -66,7 +72,7 @@ async def stats(
     await send_response(ctx, message)
 
 
-@discord.app_commands.command()  # type:ignore[arg-type]
+@discord.app_commands.command(name='subscribe')  # type:ignore[arg-type]
 @app_commands.describe(
     members='Display the number of members in each team',
     warnings='Display warnings about missing supervisors and empty teams',

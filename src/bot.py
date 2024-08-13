@@ -9,7 +9,14 @@ import discord
 from discord import app_commands
 from discord.ext import tasks
 
-from src.commands.stats import SubscribedMessage, stats, stats_subscribe, load_subscribed_messages, SUBSCRIBE_MSG_FILE
+from src.commands.stats import (
+    SubscribedMessage,
+    stats_subscribe,
+    load_subscribed_messages,
+    SUBSCRIBE_MSG_FILE,
+    Stats,
+    post_stats,
+)
 from src.rss import check_posts
 from src.constants import (
     SPECIAL_ROLE,
@@ -72,9 +79,11 @@ class BotClient(discord.Client):
         team.add_command(create_team_channel)
         team.add_command(export_team)
         self.tree.add_command(team, guild=self.guild)
+        stats = Stats()
+        stats.add_command(post_stats)
+        stats.add_command(stats_subscribe)
         self.tree.add_command(passwd, guild=self.guild)
         self.tree.add_command(stats, guild=self.guild)
-        self.tree.add_command(stats_subscribe, guild=self.guild)
         self.tree.add_command(join, guild=self.guild)
         self.tree.add_command(logs, guild=self.guild)
         self.load_passwords()
