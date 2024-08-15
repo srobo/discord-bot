@@ -14,6 +14,7 @@ from src.constants import (
     TEAM_CATEGORY_NAME,
     PASSWORDS_CHANNEL_NAME,
     TEAM_VOICE_CATEGORY_NAME,
+    TEAM_CHANNEL_PREFIX,
 )
 
 TEAM_CREATED_REASON = "Created via command by "
@@ -77,7 +78,7 @@ async def new_team(interaction: discord.interactions.Interaction["BotClient"], t
     )
     channel = await guild.create_text_channel(
         reason=TEAM_CREATED_REASON + interaction.user.name,
-        name=f"team-{tla.lower()}",
+        name=f"{TEAM_CHANNEL_PREFIX}{tla.lower()}",
         topic=name,
         category=category,
         overwrites=permissions(interaction.client, role)
@@ -123,12 +124,12 @@ async def delete_team(interaction: discord.interactions.Interaction["BotClient"]
                 await member.kick(reason=reason)
 
             for channel in guild.channels:
-                if channel.name.startswith(f"team-{tla.lower()}"):
+                if channel.name.startswith(f"{TEAM_CHANNEL_PREFIX}{tla.lower()}"):
                     await channel.delete(reason=reason)
 
             await role.delete(reason=reason)
 
-            if isinstance(interaction.channel, discord.abc.GuildChannel) and not interaction.channel.name.startswith(f"team-{tla.lower()}"):
+            if isinstance(interaction.channel, discord.abc.GuildChannel) and not interaction.channel.name.startswith(f"{TEAM_CHANNEL_PREFIX}{tla.lower()}"):
                 await interaction.edit_original_response(content=f"Team {tla.upper()} has been deleted")
     else:
         await interaction.delete_original_response()
@@ -153,7 +154,7 @@ async def create_voice(interaction: discord.interactions.Interaction["BotClient"
 
     category = discord.utils.get(guild.categories, name=TEAM_VOICE_CATEGORY_NAME)
     channel = await guild.create_voice_channel(
-        f"team-{tla.lower()}",
+        f"{TEAM_CHANNEL_PREFIX}{tla.lower()}",
         category=category,
         overwrites=permissions(interaction.client, role)
     )
@@ -182,7 +183,7 @@ async def create_team_channel(
         await interaction.response.send_message("Team does not exist", ephemeral=True)
         return
 
-    main_channel = discord.utils.get(guild.text_channels, name=f"team-{tla.lower()}")
+    main_channel = discord.utils.get(guild.text_channels, name=f"{TEAM_CHANNEL_PREFIX}{tla.lower()}")
     category = discord.utils.get(guild.categories, name=TEAM_CATEGORY_NAME)
 
     if category is None or main_channel is None:
@@ -190,7 +191,7 @@ async def create_team_channel(
         return
 
     new_channel = await guild.create_text_channel(
-        name=f"team-{tla.lower()}-{suffix.lower()}",
+        name=f"{TEAM_CHANNEL_PREFIX}{tla.lower()}-{suffix.lower()}",
         category=category,
         overwrites=permissions(interaction.client, role),
         position=main_channel.position + 1,
