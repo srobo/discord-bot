@@ -7,6 +7,7 @@ from typing import Tuple, AsyncGenerator
 import discord
 from discord import app_commands
 
+from src.commands.logs import logs
 from src.constants import (
     SPECIAL_ROLE,
     VERIFIED_ROLE,
@@ -60,6 +61,7 @@ class BotClient(discord.Client):
         team.add_command(export_team)
         self.tree.add_command(team, guild=self.guild)
         self.tree.add_command(join, guild=self.guild)
+        self.tree.add_command(logs, guild=self.guild)
 
     async def setup_hook(self) -> None:
         # This copies the global commands over to your guild.
