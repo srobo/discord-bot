@@ -22,3 +22,4 @@ PASSWORDS_CHANNEL_NAME = "role-passwords"
 
 TEAM_CATEGORY_NAME = "Team Channels"
 TEAM_VOICE_CATEGORY_NAME = "Team Voice Channels"
+TEAM_LEADER_ROLE = "Team Supervisor"

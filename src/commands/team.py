@@ -12,7 +12,7 @@ from src.constants import (
     ROLE_PREFIX,
     TEAM_CATEGORY_NAME,
     PASSWORDS_CHANNEL_NAME,
-    TEAM_VOICE_CATEGORY_NAME,
+    TEAM_VOICE_CATEGORY_NAME, TEAM_LEADER_ROLE,
 )
 
 TEAM_CREATED_REASON = "Created via command by "
@@ -186,3 +186,56 @@ async def create_team_channel(
         reason=TEAM_CREATED_REASON
     )
     await interaction.response.send_message(f"{new_channel.mention} created!", ephemeral=True)
+
+
+@group.command(
+    name='export',
+    description='Outputs all commands needed to create a team (or all teams)',
+)
+@app_commands.describe(
+    tla='Three Letter Acronym (e.g. SRZ)',
+    only_teams="Only creates teams without extra channels",
+)
+async def export_team(
+    interaction: discord.interactions.Interaction["BotClient"],
+    tla: str | None = None,
+    only_teams: bool = False,
+) -> None:
+    guild: discord.Guild | None = interaction.guild
+    if guild is None:
+        raise app_commands.NoPrivateMessage()
+
+    await interaction.response.defer(thinking=True, ephemeral=True)
+
+    async def _find_password(team_tla: str) -> str:
+        async for team_name, password in interaction.client.load_passwords():
+            if team_name == team_tla:
+                return password
+
+    async def _export_team(team_tla: str) -> str:
+        main_channel = discord.utils.get(guild.text_channels, name=f"team-{team_tla.lower()}")
+        password = await _find_password(team_tla)
+        commands = [f"/team new tla:{team_tla} name:{main_channel.topic} password:{password}"]
+
+        if not only_teams:
+            channels = filter(lambda c: c.name.startswith(f"team-{team_tla.lower()}-"), guild.text_channels)
+            for channel in channels:
+                suffix = channel.name.removeprefix(f"team-{team_tla.lower()}-")
+                commands.append(f"/team channel tla:{team_tla} suffix:{suffix}")
+
+            has_voice: bool = discord.utils.get(guild.voice_channels, name=f"team-{team_tla.lower()}") is not None
+            if has_voice:
+                commands.append(f"/team voice tla:{team_tla}")
+
+        return "\n".join(commands) + "\n"
+
+    output = "```\n"
+
+    if tla is None:
+        for team_role in guild.roles:
+            if team_role.name.startswith(ROLE_PREFIX) and team_role.name != TEAM_LEADER_ROLE:
+                output = output + await _export_team(team_role.name.removeprefix(ROLE_PREFIX))
+    else:
+        output = output + await _export_team(tla)
+    output = output + "\n```"
+    await interaction.followup.send(content=output, ephemeral=True)
