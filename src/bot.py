@@ -17,7 +17,14 @@ from src.constants import (
     PASSWORDS_CHANNEL_NAME,
 )
 from src.commands.join import join
-from src.commands.team import Team, new_team, delete_team, create_voice, create_team_channel, export_team
+from src.commands.team import (
+    Team,
+    new_team,
+    delete_team,
+    export_team,
+    create_voice,
+    create_team_channel,
+)
 
 
 class BotClient(discord.Client):

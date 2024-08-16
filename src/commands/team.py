@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Mapping
 
 import discord
-from discord import app_commands, role
+from discord import app_commands
 
 from src.commands.ui import TeamDeleteConfirm
 
@@ -10,9 +10,10 @@ if TYPE_CHECKING:
 
 from src.constants import (
     ROLE_PREFIX,
+    TEAM_LEADER_ROLE,
     TEAM_CATEGORY_NAME,
     PASSWORDS_CHANNEL_NAME,
-    TEAM_VOICE_CATEGORY_NAME, TEAM_LEADER_ROLE,
+    TEAM_VOICE_CATEGORY_NAME,
 )
 
 TEAM_CREATED_REASON = "Created via command by "
@@ -27,11 +28,16 @@ class Team(app_commands.Group):
 group = Team()
 
 
-def permissions(client: "BotClient", team: discord.Role) -> dict[discord.Role, discord.PermissionOverwrite]:
+def permissions(client: "BotClient", team: discord.Role) -> Mapping[
+    discord.Role | discord.Member, discord.PermissionOverwrite]:
+    if not isinstance(client.guild, discord.Guild):
+        return {}
+
     return {
         client.guild.default_role: discord.PermissionOverwrite(
             read_messages=False,
-            send_messages=False),
+            send_messages=False
+        ),
         client.volunteer_role: discord.PermissionOverwrite(
             read_messages=True,
             send_messages=True,
@@ -43,7 +49,7 @@ def permissions(client: "BotClient", team: discord.Role) -> dict[discord.Role, d
     }
 
 
-@group.command(
+@group.command(  # type:ignore[arg-type]
     name='new',
     description='Creates a role and channel for a team',
 )
@@ -56,8 +62,7 @@ async def new_team(interaction: discord.interactions.Interaction["BotClient"], t
                    password: str) -> None:
     guild: discord.Guild | None = interaction.guild
     if guild is None:
-        await interaction.response.send_message("No guild found", ephemeral=True)
-        return
+        raise app_commands.NoPrivateMessage()
 
     category = discord.utils.get(guild.categories, name=TEAM_CATEGORY_NAME)
     role_name = f"{ROLE_PREFIX}{tla.upper()}"
@@ -87,7 +92,7 @@ async def _save_password(guild: discord.Guild, tla: str, password: str) -> None:
         await channel.send(f"```\n{tla.upper()}:{password}\n```")
 
 
-@group.command(
+@group.command(  # type:ignore[arg-type]
     name='delete',
     description='Deletes a role and channel for a team',
 )
@@ -96,9 +101,9 @@ async def _save_password(guild: discord.Guild, tla: str, password: str) -> None:
 )
 async def delete_team(interaction: discord.interactions.Interaction["BotClient"], tla: str) -> None:
     guild: discord.Guild | None = interaction.guild
-    role: discord.Role | None = discord.utils.get(guild.roles, name=f"{ROLE_PREFIX}{tla.upper()}")
     if guild is None:
-        return
+        raise app_commands.NoPrivateMessage()
+    role: discord.Role | None = discord.utils.get(guild.roles, name=f"{ROLE_PREFIX}{tla.upper()}")
 
     if role is None:
         await interaction.response.send_message(f"Team {tla.upper()} does not exist", ephemeral=True)
@@ -106,12 +111,11 @@ async def delete_team(interaction: discord.interactions.Interaction["BotClient"]
 
     view = TeamDeleteConfirm(guild, tla)
 
-    await interaction.response.send_message(f"Are you sure you want to delete Team {tla.upper()}\n\n"
+    await interaction.response.send_message(f"Are you sure you want to delete Team {tla.upper()}?\n\n"
                                             f"This will kick all of its members.", view=view, ephemeral=True)
     await view.wait()
     if view.value:
         await interaction.edit_original_response(content=f"_Deleting Team {tla.upper()}..._", view=None)
-        guild: discord.Guild | None = interaction.guild
         reason = f"Team removed by {interaction.user.name}"
         if role is not None:
             for member in role.members:
@@ -124,11 +128,13 @@ async def delete_team(interaction: discord.interactions.Interaction["BotClient"]
 
             await role.delete(reason=reason)
 
-            if not interaction.channel.name.startswith(f"team-{tla.lower()}"):
+            if isinstance(interaction.channel, discord.abc.GuildChannel) and not interaction.channel.name.startswith(f"team-{tla.lower()}"):
                 await interaction.edit_original_response(content=f"Team {tla.upper()} has been deleted")
+    else:
+        await interaction.delete_original_response()
 
 
-@group.command(
+@group.command(  # type:ignore[arg-type]
     name='voice',
     description='Create a voice channel for a team',
 )
@@ -137,10 +143,10 @@ async def delete_team(interaction: discord.interactions.Interaction["BotClient"]
 )
 async def create_voice(interaction: discord.interactions.Interaction["BotClient"], tla: str) -> None:
     guild: discord.Guild | None = interaction.guild
-    role: discord.Role | None = discord.utils.get(guild.roles, name=f"{ROLE_PREFIX}{tla.upper()}")
     if guild is None:
-        return
+        raise app_commands.NoPrivateMessage()
 
+    role: discord.Role | None = discord.utils.get(guild.roles, name=f"{ROLE_PREFIX}{tla.upper()}")
     if role is None:
         await interaction.response.send_message(f"Team {tla.upper()} does not exist", ephemeral=True)
         return
@@ -154,7 +160,7 @@ async def create_voice(interaction: discord.interactions.Interaction["BotClient"
     await interaction.response.send_message(f"{channel.mention} created!", ephemeral=True)
 
 
-@group.command(
+@group.command(  # type:ignore[arg-type]
     name='channel',
     description='Create a secondary channel for a team',
 )
@@ -169,6 +175,11 @@ async def create_team_channel(
 ) -> None:
     guild: discord.Guild | None = interaction.guild
     if guild is None:
+        raise app_commands.NoPrivateMessage()
+
+    role: discord.Role | None = discord.utils.get(guild.roles, name=f"{ROLE_PREFIX}{tla.upper()}")
+    if role is None:
+        await interaction.response.send_message("Team does not exist", ephemeral=True)
         return
 
     main_channel = discord.utils.get(guild.text_channels, name=f"team-{tla.lower()}")
@@ -181,14 +192,51 @@ async def create_team_channel(
     new_channel = await guild.create_text_channel(
         name=f"team-{tla.lower()}-{suffix.lower()}",
         category=category,
-        overwrites=main_channel.overwrites,
+        overwrites=permissions(interaction.client, role),
         position=main_channel.position + 1,
         reason=TEAM_CREATED_REASON
     )
     await interaction.response.send_message(f"{new_channel.mention} created!", ephemeral=True)
 
 
-@group.command(
+async def _find_password(
+    team_tla: str,
+    interaction: discord.interactions.Interaction["BotClient"],
+) -> str:
+    async for team_name, password in interaction.client.load_passwords():
+        if team_name == team_tla:
+            return password
+    return ""
+
+
+async def _export_team(
+    team_tla: str,
+    only_teams: bool,
+    guild: discord.Guild,
+    interaction: discord.interactions.Interaction["BotClient"],
+) -> str:
+    main_channel = discord.utils.get(guild.text_channels, name=f"team-{team_tla.lower()}")
+    if main_channel is None and not isinstance(main_channel, discord.abc.GuildChannel):
+        raise app_commands.AppCommandError("Invalid TLA")
+
+    password = await _find_password(team_tla, interaction)
+    commands = [f"/team new tla:{team_tla} name:{main_channel.topic} password:{password}"]
+
+    if not only_teams:
+        channels = filter(lambda c: c.name.startswith(f"team-{team_tla.lower()}-"), guild.text_channels)
+        for channel in channels:
+            suffix = channel.name.removeprefix(f"team-{team_tla.lower()}-")
+            commands.append(f"/team channel tla:{team_tla} suffix:{suffix}")
+
+        has_voice: bool = discord.utils.get(guild.voice_channels, name=f"team-{team_tla.lower()}") is not None
+        if has_voice:
+            commands.append(f"/team voice tla:{team_tla}")
+
+        return "\n".join(commands) + "\n"
+    return ""
+
+
+@group.command(  # type:ignore[arg-type]
     name='export',
     description='Outputs all commands needed to create a team (or all teams)',
 )
@@ -207,35 +255,13 @@ async def export_team(
 
     await interaction.response.defer(thinking=True, ephemeral=True)
 
-    async def _find_password(team_tla: str) -> str:
-        async for team_name, password in interaction.client.load_passwords():
-            if team_name == team_tla:
-                return password
-
-    async def _export_team(team_tla: str) -> str:
-        main_channel = discord.utils.get(guild.text_channels, name=f"team-{team_tla.lower()}")
-        password = await _find_password(team_tla)
-        commands = [f"/team new tla:{team_tla} name:{main_channel.topic} password:{password}"]
-
-        if not only_teams:
-            channels = filter(lambda c: c.name.startswith(f"team-{team_tla.lower()}-"), guild.text_channels)
-            for channel in channels:
-                suffix = channel.name.removeprefix(f"team-{team_tla.lower()}-")
-                commands.append(f"/team channel tla:{team_tla} suffix:{suffix}")
-
-            has_voice: bool = discord.utils.get(guild.voice_channels, name=f"team-{team_tla.lower()}") is not None
-            if has_voice:
-                commands.append(f"/team voice tla:{team_tla}")
-
-        return "\n".join(commands) + "\n"
-
     output = "```\n"
 
     if tla is None:
         for team_role in guild.roles:
             if team_role.name.startswith(ROLE_PREFIX) and team_role.name != TEAM_LEADER_ROLE:
-                output = output + await _export_team(team_role.name.removeprefix(ROLE_PREFIX))
+                output = output + await _export_team(team_role.name.removeprefix(ROLE_PREFIX), only_teams, guild, interaction)
     else:
-        output = output + await _export_team(tla)
+        output = output + await _export_team(tla, only_teams, guild, interaction)
     output = output + "\n```"
     await interaction.followup.send(content=output, ephemeral=True)

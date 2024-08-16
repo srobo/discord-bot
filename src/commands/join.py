@@ -16,7 +16,7 @@ from src.constants import (
 REASON = "A correct password was entered."
 
 
-@discord.app_commands.command(
+@discord.app_commands.command(  # type:ignore[arg-type]
     name='join',
     description='Join a team using a password',
 )
