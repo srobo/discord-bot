@@ -1,6 +1,6 @@
 # file to store messages being dynamically updated between reboots
 import json
-from typing import List, NamedTuple, Dict, Any, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Union, NamedTuple, TYPE_CHECKING
 
 import discord
 from discord import app_commands
@@ -23,7 +23,7 @@ class SubscribedMessage(NamedTuple):
     stats: bool = False
 
     @classmethod
-    def load(cls, dct: Dict[str, Any]) -> Union['SubscribedMessage', Dict[str, Any]]:
+    def load(cls, dct: Dict[str, Any]) -> Union['SubscribedMessage', Dict[str, Any]]:  # type:ignore
         """Load a SubscribedMessage object from a dictionary."""
         if tuple(dct.keys()) == cls._fields:
             return cls(
@@ -50,7 +50,7 @@ class Stats(app_commands.Group):
     pass
 
 
-@app_commands.command(name='post')
+@app_commands.command(name='post')  # type:ignore[arg-type]
 @app_commands.describe(
     members='Display the number of members in each team',
     warnings='Display warnings about missing supervisors and empty teams',

@@ -1,6 +1,6 @@
-from collections import defaultdict
-from statistics import mean
 from typing import List, NamedTuple
+from statistics import mean
+from collections import defaultdict
 
 import discord
 
@@ -20,7 +20,7 @@ class TeamData(NamedTuple):
 
     def is_primary(self) -> bool:
         """Return whether the team is a primary team."""
-        return not self.TLA[-1].isdigit() or self.TLA[-1] == 1
+        return not self.TLA[-1].isdigit() or self.TLA[-1] == '1'
 
     def school(self) -> str:
         """TLA without the team number."""
@@ -113,7 +113,7 @@ class TeamsData(NamedTuple):
             *(
                 str(team)
                 for team in self.teams_data
-            )
+            ),
         ])
 
     def warnings(self) -> str:

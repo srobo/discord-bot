@@ -1,9 +1,8 @@
-import json
 import os
 import json
 import asyncio
 import logging
-from typing import Tuple, AsyncGenerator, List
+from typing import List, Tuple, AsyncGenerator
 
 import discord
 from discord import app_commands
@@ -18,6 +17,7 @@ from src.commands.stats import (
     post_stats,
 )
 from src.rss import check_posts
+from src.teams import TeamsData
 from src.constants import (
     SPECIAL_ROLE,
     VERIFIED_ROLE,
@@ -25,9 +25,9 @@ from src.constants import (
     VOLUNTEER_ROLE,
     FEED_CHANNEL_NAME,
     FEED_CHECK_INTERVAL,
+    TEAM_LEADER_ROLE,
     ANNOUNCE_CHANNEL_NAME,
     WELCOME_CATEGORY_NAME,
-    TEAM_LEADER_ROLE,
 )
 from src.commands.join import join
 from src.commands.logs import logs
@@ -40,7 +40,14 @@ from src.commands.team import (
     create_team_channel,
 )
 from src.commands.passwd import passwd
-from src.teams import TeamsData
+from src.commands.stats import (
+    Stats,
+    post_stats,
+    stats_subscribe,
+    SubscribedMessage,
+    SUBSCRIBE_MSG_FILE,
+    load_subscribed_messages,
+)
 
 
 class BotClient(discord.Client):
@@ -174,9 +181,10 @@ To gain access, you must use `/join` with the password for your group.
 
     async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
         """Update subscribed messages when a member's roles change."""
-        self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
+        if isinstance(self.guild, discord.Guild):
+            self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
 
-        await self.update_subscribed_messages()
+            await self.update_subscribed_messages()
 
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         """Remove subscribed messages by reacting with a cross mark."""
@@ -188,7 +196,7 @@ To gain access, you must use `/join` with the password for your group.
         if payload.member is None:
             # Ignore for users not in the server
             return
-        if self.admin_role not in payload.member.roles:
+        if self.volunteer_role not in payload.member.roles:
             # Ignore for users without admin privileges
             return
 
@@ -276,7 +284,7 @@ To gain access, you must use `/join` with the password for your group.
             message = self.stats_message(
                 sub_msg.members,
                 sub_msg.warnings,
-                sub_msg.stats
+                sub_msg.stats,
             )
             message = f"```\n{message}\n```"
 
