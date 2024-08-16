@@ -1,6 +1,6 @@
 # file to store messages being dynamically updated between reboots
 import json
-from typing import Any, Dict, List, Union, NamedTuple, TYPE_CHECKING
+from typing import Any, Dict, NamedTuple, TYPE_CHECKING
 
 import discord
 from discord import app_commands
@@ -23,17 +23,9 @@ class SubscribedMessage(NamedTuple):
     stats: bool = False
 
     @classmethod
-    def load(cls, dct: Dict[str, Any]) -> Union['SubscribedMessage', Dict[str, Any]]:  # type:ignore
+    def load(cls, dct: Dict[str, Any]) -> 'SubscribedMessage':  # type:ignore[misc]
         """Load a SubscribedMessage object from a dictionary."""
-        if tuple(dct.keys()) == cls._fields:
-            return cls(
-                dct['channel_id'],
-                dct['message_id'],
-                dct['members'],
-                dct['warnings'],
-                dct['stats']
-            )
-        return dct
+        return cls(**dct)
 
     def __eq__(self, comp: object) -> bool:
         if not isinstance(comp, SubscribedMessage):
