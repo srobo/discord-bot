@@ -169,11 +169,11 @@ To gain access, you must use `/join` with the password for your group.
                 self.passwords = {}
 
     def set_password(self, tla: str, password: str) -> None:
-        self.passwords[tla] = password
+        self.passwords[tla.upper()] = password
         with open('passwords.json', 'w') as f:
             json.dump(self.passwords, f)
 
     def remove_password(self, tla: str) -> None:
-        del self.passwords[tla]
+        del self.passwords[tla.upper()]
         with open('passwords.json', 'w') as f:
             json.dump(self.passwords, f)
