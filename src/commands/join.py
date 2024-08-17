@@ -75,7 +75,7 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
             f"deleted channel '{channel.name}' because verification has completed.",
         )
     else:
-        await interaction.response.send_message("Incorrect password.", ephemeral=True)
+        await interaction.response.send_message("Incorrect password.")
 
 
 def find_team(client: "BotClient", member: discord.Member, entered: str) -> str | None:
