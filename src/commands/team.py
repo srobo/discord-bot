@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Mapping
+from typing import Mapping, TYPE_CHECKING
 
 import discord
 from discord import app_commands
@@ -12,9 +12,9 @@ from src.constants import (
     ROLE_PREFIX,
     TEAM_LEADER_ROLE,
     TEAM_CATEGORY_NAME,
+    TEAM_CHANNEL_PREFIX,
     PASSWORDS_CHANNEL_NAME,
     TEAM_VOICE_CATEGORY_NAME,
-    TEAM_CHANNEL_PREFIX,
 )
 
 TEAM_CREATED_REASON = "Created via command by "

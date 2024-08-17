@@ -7,7 +7,6 @@ from typing import Tuple, AsyncGenerator
 import discord
 from discord import app_commands
 
-from src.commands.logs import logs
 from src.constants import (
     SPECIAL_ROLE,
     VERIFIED_ROLE,
@@ -18,6 +17,7 @@ from src.constants import (
     PASSWORDS_CHANNEL_NAME,
 )
 from src.commands.join import join
+from src.commands.logs import logs
 from src.commands.team import (
     Team,
     new_team,

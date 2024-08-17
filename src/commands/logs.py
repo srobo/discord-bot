@@ -1,14 +1,14 @@
-import logging
 import os
 import re
-import shutil
 import sys
+import shutil
+import logging
 import tempfile
-from datetime import datetime
 from enum import Enum
+from typing import IO, cast, List, Tuple, TYPE_CHECKING
 from pathlib import Path
-from typing import TYPE_CHECKING, IO, Tuple, List, cast
-from zipfile import BadZipFile, ZipFile, is_zipfile, ZIP_DEFLATED
+from zipfile import ZipFile, BadZipFile, is_zipfile, ZIP_DEFLATED
+from datetime import date
 
 import aiohttp
 import discord
@@ -251,7 +251,7 @@ async def logs_upload(
                         # The file will be removed with the temporary directory
                         continue
 
-                    if team_animation and animations_found:
+                    if team_animation == AnimationHandling.team and animations_found:
                         insert_match_files(tmpdir / archive_name, tmpdir / 'animations')
 
                     # get team's channel
@@ -290,7 +290,7 @@ async def logs_upload(
 
                     completed_tlas.append(tla)
 
-            if team_animation is False and animations_found:
+            if team_animation == AnimationHandling.separate and animations_found:
                 common_channel = await get_channel(ctx, "general")
                 # upload animations.zip to common channel
                 if common_channel:
@@ -311,7 +311,7 @@ async def logs_upload(
         await log_and_reply(ctx, f"# {zip_name} is not a valid ZIP file")
 
 
-@app_commands.command(
+@app_commands.command(  # type:ignore[arg-type]
     name="logs",
     description="Get combined logs archive from URL for distribution to teams, avoids Discord's size limit",
 )
@@ -332,7 +332,7 @@ async def logs(
         if url.endswith('.zip'):
             filename = url.split("/")[-1]
         else:
-            filename = f"logs_upload-{datetime.date.today()}.zip"
+            filename = f"logs_upload-{date.today()}.zip"
 
         await interaction.response.defer(thinking=True)  # provides feedback that the bot is processing
         # download zip, using aiohttp
@@ -358,6 +358,6 @@ async def logs(
             interaction,
             zipfile,
             filename,
-            event_name,
+            event_name or "",
             animations,
         )
