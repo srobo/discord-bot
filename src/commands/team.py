@@ -255,7 +255,7 @@ async def export_team(
 
 @group.command(  # type:ignore[arg-type]
     name='passwd',
-    description='Outputs or changes the password of a given team',
+    description='Outputs or changes team passwords',
 )
 @app_commands.describe(
     tla='Three Letter Acronym (e.g. SRZ)',
@@ -263,10 +263,15 @@ async def export_team(
 )
 async def passwd(
     interaction: discord.interactions.Interaction["BotClient"],
-    tla: str,
+    tla: str | None = None,
     new_password: str | None = None,
 ) -> None:
-    if new_password:
+    if tla is None:
+        await interaction.response.send_message(
+            '\n'.join([f"**{team}:** {password}" for team, password in interaction.client.passwords.items()]),
+            ephemeral=True,
+        )
+    elif new_password:
         interaction.client.set_password(tla, new_password)
         await interaction.response.send_message(f"The password for {tla.upper()} has been changed.", ephemeral=True)
     else:
