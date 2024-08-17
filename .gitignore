@@ -2,3 +2,4 @@
 log.log
 .env
 seen_posts.txt
+passwords.json
