@@ -1,7 +1,6 @@
 import os
 import asyncio
 import logging
-import textwrap
 from typing import Tuple, AsyncGenerator
 
 import discord
@@ -116,13 +115,12 @@ class BotClient(discord.Client):
                 guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
             },
         )
-        await channel.send(textwrap.dedent(
+        await channel.send(
             f"""Welcome {member.mention}!
-            To gain access, you must use `/join` with the password for your group.
+To gain access, you must use `/join` with the password for your group.
 
-            *Don't have the password? it should have been sent with this join link to your team leader*
-            """,
-        ))
+*Don't have the password? it should have been sent with this join link to your team leader*""",
+        )
         self.logger.info(f"Created welcome channel for '{name}'")
 
     async def on_member_remove(self, member: discord.Member) -> None:
