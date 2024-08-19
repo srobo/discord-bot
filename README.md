@@ -21,9 +21,11 @@ For development, see `script/requirements.txt`
 - Create a role named `Verified` which can see the base channels (i.e. #general)
 - Create a role named `Unverified Volunteer` which can see the volunteer onboarding channel.
 - Create a role named `Blueshirt`.
-- Create a new channel category called 'welcome', block all users from reading this category in its permissions.
-- Create another channel, visible only to the admins, named '#role-passwords', enter in it 1 message per role in the form `role : password`. Special case: for the `Unverified Volunteer` role, please use the role name `Team SRZ`.
-- Create each role named `Team {role}`.
+- Create a role named `Team Supervisor`.
+- Create a new channel category called `welcome`, block all users from reading this category in its permissions.
+- Create channel categories called `Team Channels` and `Team Voice Channels`.
+- Create a channel named `#blog`, block all users from sending messages in it.
+- Create teams using the `/team new` command.
 
 And voilà, any new users should automatically get their role assigned once they enter the correct password.
 
@@ -35,3 +37,4 @@ And voilà, any new users should automatically get their role assigned once they
 4. `pip install -r requirements.txt`
 5. `python src/main.py`
 6. In the server settings, ensure the `/join` command cannot be used by the `Verified` role
+7. Ensure the `/passwd` commands can only be used by `Blueshirt`s
