@@ -22,7 +22,7 @@ TEAM_CREATED_REASON = "Created via command by "
 @app_commands.guild_only()
 @app_commands.default_permissions()
 class Team(app_commands.Group):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(description="Manage teams")
 
 
