@@ -22,13 +22,13 @@ from src.commands.join import join
 from src.commands.logs import logs
 from src.commands.team import (
     Team,
-    passwd,
     new_team,
     delete_team,
     export_team,
     create_voice,
     create_team_channel,
 )
+from src.commands.passwd import passwd
 
 
 class BotClient(discord.Client):
@@ -63,8 +63,8 @@ class BotClient(discord.Client):
         team.add_command(create_voice)
         team.add_command(create_team_channel)
         team.add_command(export_team)
-        team.add_command(passwd)
         self.tree.add_command(team, guild=self.guild)
+        self.tree.add_command(passwd, guild=self.guild)
         self.tree.add_command(join, guild=self.guild)
         self.tree.add_command(logs, guild=self.guild)
         self.load_passwords()

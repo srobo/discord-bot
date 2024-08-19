@@ -13,7 +13,6 @@ from src.constants import (
     TEAM_LEADER_ROLE,
     TEAM_CATEGORY_NAME,
     TEAM_CHANNEL_PREFIX,
-    PASSWORDS_CHANNEL_NAME,
     TEAM_VOICE_CATEGORY_NAME,
 )
 
@@ -23,7 +22,8 @@ TEAM_CREATED_REASON = "Created via command by "
 @app_commands.guild_only()
 @app_commands.default_permissions()
 class Team(app_commands.Group):
-    pass
+    def __init__(self):
+        super().__init__(description="Manage teams")
 
 
 group = Team()
@@ -251,29 +251,3 @@ async def export_team(
         output = output + await _export_team(tla, only_teams, guild, interaction)
     output = output + "\n```"
     await interaction.followup.send(content=output, ephemeral=True)
-
-
-@group.command(  # type:ignore[arg-type]
-    name='passwd',
-    description='Outputs or changes team passwords',
-)
-@app_commands.describe(
-    tla='Three Letter Acronym (e.g. SRZ)',
-    new_password='New password',
-)
-async def passwd(
-    interaction: discord.interactions.Interaction["BotClient"],
-    tla: str | None = None,
-    new_password: str | None = None,
-) -> None:
-    if tla is None:
-        await interaction.response.send_message(
-            '\n'.join([f"**{team}:** {password}" for team, password in interaction.client.passwords.items()]),
-            ephemeral=True,
-        )
-    elif new_password:
-        interaction.client.set_password(tla, new_password)
-        await interaction.response.send_message(f"The password for {tla.upper()} has been changed.", ephemeral=True)
-    else:
-        password = interaction.client.passwords[tla]
-        await interaction.response.send_message(f"The password for {tla.upper()} is `{password}`", ephemeral=True)
