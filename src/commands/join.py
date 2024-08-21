@@ -18,7 +18,7 @@ REASON = "A correct password was entered."
 
 @discord.app_commands.command(  # type:ignore[arg-type]
     name='join',
-    description='Join a team using a password',
+    description='Use your password to join the server under your team',
 )
 @app_commands.describe(
     password="Your team's password",
@@ -28,12 +28,12 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
     if member is None or isinstance(member, discord.User):
         return
 
-    if interaction.guild is None or not isinstance(interaction.channel, discord.TextChannel):
-        return
-    guild: discord.Guild = interaction.guild
-
-    channel: discord.TextChannel = interaction.channel
-    if channel is None or not channel.name.startswith(CHANNEL_PREFIX):
+    guild: discord.Guild | None = interaction.guild
+    channel: discord.interactions.InteractionChannel | None = interaction.channel
+    if (guild is None
+        or not isinstance(channel, discord.TextChannel)
+        or channel is None
+        or not channel.name.startswith(CHANNEL_PREFIX)):
         return
 
     chosen_team = await find_team(interaction.client, member, password)
