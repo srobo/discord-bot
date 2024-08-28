@@ -2,20 +2,12 @@ import os
 import json
 import asyncio
 import logging
-from typing import List, Tuple, AsyncGenerator
+from typing import List
 
 import discord
 from discord import app_commands
 from discord.ext import tasks
 
-from src.commands.stats import (
-    SubscribedMessage,
-    stats_subscribe,
-    load_subscribed_messages,
-    SUBSCRIBE_MSG_FILE,
-    Stats,
-    post_stats,
-)
 from src.rss import check_posts
 from src.teams import TeamsData
 from src.constants import (
@@ -23,9 +15,9 @@ from src.constants import (
     VERIFIED_ROLE,
     CHANNEL_PREFIX,
     VOLUNTEER_ROLE,
+    TEAM_LEADER_ROLE,
     FEED_CHANNEL_NAME,
     FEED_CHECK_INTERVAL,
-    TEAM_LEADER_ROLE,
     ANNOUNCE_CHANNEL_NAME,
     WELCOME_CATEGORY_NAME,
 )
@@ -39,7 +31,6 @@ from src.commands.team import (
     create_voice,
     create_team_channel,
 )
-from src.commands.passwd import passwd
 from src.commands.stats import (
     Stats,
     post_stats,
@@ -48,6 +39,7 @@ from src.commands.stats import (
     SUBSCRIBE_MSG_FILE,
     load_subscribed_messages,
 )
+from src.commands.passwd import passwd
 
 
 class BotClient(discord.Client):
