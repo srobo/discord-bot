@@ -288,5 +288,5 @@ To gain access, you must use `/join` with the password for your group.
                     continue
                 msg = await msg_channel.fetch_message(sub_msg.message_id)
                 await msg.edit(content=message)
-            except AttributeError:  # message is no longer available
+            except discord.errors.NotFound:  # message is no longer available
                 await self.remove_subscribed_message(sub_msg)
