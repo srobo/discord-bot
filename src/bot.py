@@ -20,6 +20,7 @@ from src.constants import (
     PASSWORDS_CHANNEL_NAME,
 )
 from src.commands.join import join
+from src.commands.logs import logs
 from src.commands.team import (
     Team,
     new_team,
@@ -64,6 +65,7 @@ class BotClient(discord.Client):
         team.add_command(export_team)
         self.tree.add_command(team, guild=self.guild)
         self.tree.add_command(join, guild=self.guild)
+        self.tree.add_command(logs, guild=self.guild)
 
     async def setup_hook(self) -> None:
         # This copies the global commands over to your guild.
