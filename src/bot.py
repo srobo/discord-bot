@@ -1,7 +1,7 @@
 import os
+import json
 import asyncio
 import logging
-from typing import Tuple, AsyncGenerator
 
 import discord
 from discord import app_commands
@@ -17,7 +17,6 @@ from src.constants import (
     FEED_CHECK_INTERVAL,
     ANNOUNCE_CHANNEL_NAME,
     WELCOME_CATEGORY_NAME,
-    PASSWORDS_CHANNEL_NAME,
 )
 from src.commands.join import join
 from src.commands.logs import logs
@@ -29,6 +28,7 @@ from src.commands.team import (
     create_voice,
     create_team_channel,
 )
+from src.commands.passwd import passwd
 
 
 class BotClient(discord.Client):
@@ -39,7 +39,7 @@ class BotClient(discord.Client):
     volunteer_role: discord.Role
     welcome_category: discord.CategoryChannel
     announce_channel: discord.TextChannel
-    passwords_channel: discord.TextChannel
+    passwords: dict[str, str]
     feed_channel: discord.TextChannel
 
     def __init__(
@@ -64,8 +64,10 @@ class BotClient(discord.Client):
         team.add_command(create_team_channel)
         team.add_command(export_team)
         self.tree.add_command(team, guild=self.guild)
+        self.tree.add_command(passwd, guild=self.guild)
         self.tree.add_command(join, guild=self.guild)
         self.tree.add_command(logs, guild=self.guild)
+        self.load_passwords()
 
     async def setup_hook(self) -> None:
         # This copies the global commands over to your guild.
@@ -86,7 +88,6 @@ class BotClient(discord.Client):
         volunteer_role = discord.utils.get(guild.roles, name=VOLUNTEER_ROLE)
         welcome_category = discord.utils.get(guild.categories, name=WELCOME_CATEGORY_NAME)
         announce_channel = discord.utils.get(guild.text_channels, name=ANNOUNCE_CHANNEL_NAME)
-        passwords_channel = discord.utils.get(guild.text_channels, name=PASSWORDS_CHANNEL_NAME)
         feed_channel = discord.utils.get(guild.text_channels, name=FEED_CHANNEL_NAME)
 
         if (
@@ -95,7 +96,6 @@ class BotClient(discord.Client):
             or volunteer_role is None
             or welcome_category is None
             or announce_channel is None
-            or passwords_channel is None
             or feed_channel is None
         ):
             logging.error("Roles and channels are not set up")
@@ -106,7 +106,6 @@ class BotClient(discord.Client):
             self.volunteer_role = volunteer_role
             self.welcome_category = welcome_category
             self.announce_channel = announce_channel
-            self.passwords_channel = passwords_channel
             self.feed_channel = feed_channel
 
     async def on_member_join(self, member: discord.Member) -> None:
@@ -152,19 +151,29 @@ To gain access, you must use `/join` with the password for your group.
     async def before_check_for_new_blog_posts(self) -> None:
         await self.wait_until_ready()
 
-    async def load_passwords(self) -> AsyncGenerator[Tuple[str, str], None]:
+    def load_passwords(self) -> None:
         """
         Returns a mapping from role name to the password for that role.
 
-        Reads from the first message of the channel named {PASSWORDS_CHANNEL_NAME}.
         The format should be as follows:
         ```
         teamname:password
         ```
         """
-        message: discord.Message
-        async for message in self.passwords_channel.history(limit=100, oldest_first=True):
-            if message.content.startswith('```'):
-                content: str = message.content.replace('`', '').strip()
-                team, password = content.split(':')
-                yield team.strip(), password.strip()
+        try:
+            with open('passwords.json') as f:
+                self.passwords = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            with open('passwords.json', 'w') as f:
+                f.write('{}')
+                self.passwords = {}
+
+    def set_password(self, tla: str, password: str) -> None:
+        self.passwords[tla.upper()] = password
+        with open('passwords.json', 'w') as f:
+            json.dump(self.passwords, f)
+
+    def remove_password(self, tla: str) -> None:
+        del self.passwords[tla.upper()]
+        with open('passwords.json', 'w') as f:
+            json.dump(self.passwords, f)

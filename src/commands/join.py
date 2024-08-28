@@ -36,7 +36,7 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
         or not channel.name.startswith(CHANNEL_PREFIX)):
         return
 
-    chosen_team = await find_team(interaction.client, member, password)
+    chosen_team = find_team(interaction.client, member, password)
     if chosen_team:
         if chosen_team == SPECIAL_TEAM:
             role_name = SPECIAL_ROLE
@@ -75,15 +75,15 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
             f"deleted channel '{channel.name}' because verification has completed.",
         )
     else:
-        await interaction.response.send_message("Incorrect password.", ephemeral=True)
+        await interaction.response.send_message("Incorrect password.")
 
 
-async def find_team(client: "BotClient", member: discord.Member, entered: str) -> str | None:
-    async for team_name, password in client.load_passwords():
-        if password in entered.lower():
+def find_team(client: "BotClient", member: discord.Member, entered: str) -> str | None:
+    for team_name, password in client.passwords.items():
+        if entered == password:
             client.logger.info(
                 f"'{member.name}' entered the correct password for {team_name}",
             )
             # Password was correct!
             return team_name
-    return None
+    return ""

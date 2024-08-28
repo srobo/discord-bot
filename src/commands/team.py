@@ -13,7 +13,6 @@ from src.constants import (
     TEAM_LEADER_ROLE,
     TEAM_CATEGORY_NAME,
     TEAM_CHANNEL_PREFIX,
-    PASSWORDS_CHANNEL_NAME,
     TEAM_VOICE_CATEGORY_NAME,
 )
 
@@ -23,7 +22,8 @@ TEAM_CREATED_REASON = "Created via command by "
 @app_commands.guild_only()
 @app_commands.default_permissions()
 class Team(app_commands.Group):
-    pass
+    def __init__(self) -> None:
+        super().__init__(description="Manage teams")
 
 
 group = Team()
@@ -83,14 +83,8 @@ async def new_team(interaction: discord.interactions.Interaction["BotClient"], t
         category=category,
         overwrites=permissions(interaction.client, role)
     )
-    await _save_password(guild, tla, password)
+    interaction.client.set_password(tla, password)
     await interaction.response.send_message(f"{role.mention} and {channel.mention} created!", ephemeral=True)
-
-
-async def _save_password(guild: discord.Guild, tla: str, password: str) -> None:
-    channel: discord.TextChannel | None = discord.utils.get(guild.text_channels, name=PASSWORDS_CHANNEL_NAME)
-    if channel is not None:
-        await channel.send(f"```\n{tla.upper()}:{password}\n```")
 
 
 @group.command(  # type:ignore[arg-type]
@@ -128,6 +122,7 @@ async def delete_team(interaction: discord.interactions.Interaction["BotClient"]
                     await channel.delete(reason=reason)
 
             await role.delete(reason=reason)
+            interaction.client.remove_password(tla)
 
             if isinstance(interaction.channel, discord.abc.GuildChannel) and not interaction.channel.name.startswith(f"{TEAM_CHANNEL_PREFIX}{tla.lower()}"):
                 await interaction.edit_original_response(content=f"Team {tla.upper()} has been deleted")
@@ -200,16 +195,6 @@ async def create_team_channel(
     await interaction.response.send_message(f"{new_channel.mention} created!", ephemeral=True)
 
 
-async def _find_password(
-    team_tla: str,
-    interaction: discord.interactions.Interaction["BotClient"],
-) -> str:
-    async for team_name, password in interaction.client.load_passwords():
-        if team_name == team_tla:
-            return password
-    return ""
-
-
 async def _export_team(
     team_tla: str,
     only_teams: bool,
@@ -220,7 +205,7 @@ async def _export_team(
     if main_channel is None and not isinstance(main_channel, discord.abc.GuildChannel):
         raise app_commands.AppCommandError("Invalid TLA")
 
-    password = await _find_password(team_tla, interaction)
+    password = interaction.client.passwords[team_tla]
     commands = [f"/team new tla:{team_tla} name:{main_channel.topic} password:{password}"]
 
     if not only_teams:
