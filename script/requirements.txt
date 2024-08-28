@@ -24,11 +24,15 @@ attrs==24.1.0
     # via
     #   -r script/../requirements.txt
     #   aiohttp
+beautifulsoup4==4.12.3
+    # via -r script/../requirements.txt
 build==1.0.3
     # via pip-tools
 click==8.1.7
     # via pip-tools
 discord-py==2.4.0
+    # via -r script/../requirements.txt
+feedparser==6.0.11
     # via -r script/../requirements.txt
 flake8==6.1.0
     # via
@@ -93,14 +97,28 @@ pyproject-hooks==1.0.0
     # via build
 python-dotenv==1.0.1
     # via -r script/../requirements.txt
+sgmllib3k==1.0.0
+    # via
+    #   -r script/../requirements.txt
+    #   feedparser
 six==1.16.0
     # via flake8-tuple
+soupsieve==2.5
+    # via
+    #   -r script/../requirements.txt
+    #   beautifulsoup4
 tomli==2.0.1
     # via
     #   build
     #   mypy
     #   pip-tools
     #   pyproject-hooks
+types-beautifulsoup4==4.12.0.20240511
+    # via -r script/../requirements.txt
+types-html5lib==1.1.11.20240806
+    # via
+    #   -r script/../requirements.txt
+    #   types-beautifulsoup4
 typing-extensions==4.7.1
     # via mypy
 wheel==0.41.2

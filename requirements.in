@@ -1,2 +1,5 @@
 python-dotenv
 discord.py
+feedparser
+beautifulsoup4
+types-beautifulsoup4

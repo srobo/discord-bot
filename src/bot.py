@@ -5,12 +5,16 @@ from typing import Tuple, AsyncGenerator
 
 import discord
 from discord import app_commands
+from discord.ext import tasks
 
+from src.rss import check_posts
 from src.constants import (
     SPECIAL_ROLE,
     VERIFIED_ROLE,
     CHANNEL_PREFIX,
     VOLUNTEER_ROLE,
+    FEED_CHANNEL_NAME,
+    FEED_CHECK_INTERVAL,
     ANNOUNCE_CHANNEL_NAME,
     WELCOME_CATEGORY_NAME,
     PASSWORDS_CHANNEL_NAME,
@@ -35,6 +39,7 @@ class BotClient(discord.Client):
     welcome_category: discord.CategoryChannel
     announce_channel: discord.TextChannel
     passwords_channel: discord.TextChannel
+    feed_channel: discord.TextChannel
 
     def __init__(
         self,
@@ -48,7 +53,7 @@ class BotClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
         guild_id = os.getenv('DISCORD_GUILD_ID')
         if guild_id is None or not guild_id.isnumeric():
-            logger.error("Invalid guild ID")
+            self.logger.error("Invalid guild ID")
             exit(1)
         self.guild = discord.Object(id=int(guild_id))
         team = Team()
@@ -64,6 +69,7 @@ class BotClient(discord.Client):
         # This copies the global commands over to your guild.
         self.tree.copy_global_to(guild=self.guild)
         await self.tree.sync(guild=self.guild)
+        self.check_for_new_blog_posts.start()
 
     async def on_ready(self) -> None:
         self.logger.info(f"{self.user} has connected to Discord!")
@@ -79,6 +85,7 @@ class BotClient(discord.Client):
         welcome_category = discord.utils.get(guild.categories, name=WELCOME_CATEGORY_NAME)
         announce_channel = discord.utils.get(guild.text_channels, name=ANNOUNCE_CHANNEL_NAME)
         passwords_channel = discord.utils.get(guild.text_channels, name=PASSWORDS_CHANNEL_NAME)
+        feed_channel = discord.utils.get(guild.text_channels, name=FEED_CHANNEL_NAME)
 
         if (
             verified_role is None
@@ -87,6 +94,7 @@ class BotClient(discord.Client):
             or welcome_category is None
             or announce_channel is None
             or passwords_channel is None
+            or feed_channel is None
         ):
             logging.error("Roles and channels are not set up")
             exit(1)
@@ -97,6 +105,7 @@ class BotClient(discord.Client):
             self.welcome_category = welcome_category
             self.announce_channel = announce_channel
             self.passwords_channel = passwords_channel
+            self.feed_channel = feed_channel
 
     async def on_member_join(self, member: discord.Member) -> None:
         name = member.display_name
@@ -131,6 +140,15 @@ To gain access, you must use `/join` with the password for your group.
             if channel.overwrites.keys() == {member.guild.default_role, member.guild.me}:
                 await channel.delete()
                 self.logger.info(f"Deleted channel '{channel.name}', because it has no users.")
+
+    @tasks.loop(seconds=FEED_CHECK_INTERVAL)
+    async def check_for_new_blog_posts(self) -> None:
+        self.logger.info("Checking for new blog posts")
+        await check_posts(self.feed_channel)
+
+    @check_for_new_blog_posts.before_loop
+    async def before_check_for_new_blog_posts(self) -> None:
+        await self.wait_until_ready()
 
     async def load_passwords(self) -> AsyncGenerator[Tuple[str, str], None]:
         """
