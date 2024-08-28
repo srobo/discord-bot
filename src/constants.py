@@ -27,4 +27,4 @@ TEAM_LEADER_ROLE = "Team Supervisor"
 
 FEED_URL = "https://studentrobotics.org/feed.xml"
 FEED_CHANNEL_NAME = "blog"
-FEED_CHECK_INTERVAL = 10  # seconds
+FEED_CHECK_INTERVAL = 60 * 3  # in seconds
