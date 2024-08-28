@@ -263,7 +263,7 @@ To gain access, you must use `/join` with the password for your group.
 
         if message:  # message may have already been deleted manually
             chan_name = message.channel.name if hasattr(message.channel, 'name') else 'unknown channel'
-            print(f'Removing message in {chan_name} from {message.author.name}')
+            self.logger.info(f'Removing message in {chan_name} from {message.author.name}')
             await message.delete()  # remove message from discord
 
         # remove message from subscription list and save to file
@@ -272,7 +272,7 @@ To gain access, you must use `/join` with the password for your group.
 
     async def update_subscribed_messages(self) -> None:
         """Update all subscribed messages."""
-        print('Updating subscribed messages')
+        self.logger.info('Updating subscribed messages')
         for sub_msg in self.subscribed_messages:  # edit all subscribed messages
             message = self.stats_message(
                 sub_msg.members,
