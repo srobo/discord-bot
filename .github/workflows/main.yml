@@ -30,6 +30,7 @@ jobs:
         python3 -m venv venv
         venv/bin/pip install -U pip wheel
         venv/bin/pip install -r script/requirements.txt
+        venv/bin/pip install .
 
     - name: Lint with flake8
       run: |
