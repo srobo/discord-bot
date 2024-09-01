@@ -30,10 +30,12 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
 
     guild: discord.Guild | None = interaction.guild
     channel: discord.interactions.InteractionChannel | None = interaction.channel
-    if (guild is None
+    if (
+        guild is None
         or not isinstance(channel, discord.TextChannel)
         or channel is None
-        or not channel.name.startswith(CHANNEL_PREFIX)):
+        or not channel.name.startswith(CHANNEL_PREFIX)
+    ):
         return
 
     chosen_team = find_team(interaction.client, member, password)

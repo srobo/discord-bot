@@ -6,6 +6,7 @@ from discord import app_commands
 if TYPE_CHECKING:
     from sr.discord_bot.bot import BotClient
 
+
 @app_commands.command(  # type:ignore[arg-type]
     name='passwd',
     description='Outputs or changes team passwords',
@@ -29,7 +30,7 @@ async def passwd(
             if isinstance(interaction.user, discord.Member) and not interaction.user.guild_permissions.administrator:
                 await interaction.response.send_message(
                     "You do not have permission to change team passwords.",
-                    ephemeral=True
+                    ephemeral=True,
                 )
                 return
             interaction.client.set_password(tla, new_password)
