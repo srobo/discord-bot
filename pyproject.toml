@@ -21,3 +21,37 @@ classifiers = [
 dev = [
     "types-beautifulsoup4",
 ]
+
+[tool.mypy]
+disallow_any_explicit = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+no_implicit_optional = true
+strict_optional = true
+
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+
+implicit_reexport = false
+strict_equality = true
+
+scripts_are_modules = true
+warn_unused_configs = true
+
+[tool.isort]
+atomic = true
+balanced_wrapping = true
+combine_as_imports = true
+include_trailing_comma = true
+length_sort = true
+multi_line_output = 3
+order_by_type = false
+
+default_section = "THIRDPARTY"
+sections = ["FUTURE","STDLIB","THIRDPARTY","FIRSTPARTY","LOCALFOLDER"]
