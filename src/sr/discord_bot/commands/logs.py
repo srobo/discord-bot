@@ -14,10 +14,10 @@ import aiohttp
 import discord
 from discord import app_commands
 
-from src.constants import TEAM_CHANNEL_PREFIX
+from sr.discord_bot.constants import TEAM_CHANNEL_PREFIX
 
 if TYPE_CHECKING:
-    from src.bot import BotClient
+    from sr.discord_bot.bot import BotClient
 
 
 class AnimationHandling(Enum):
@@ -193,8 +193,7 @@ async def send_file(
 def extract_animations(zipfile: ZipFile, tmpdir: Path, fully_extract: bool) -> bool:
     animation_files = [
         name for name in zipfile.namelist()
-        if name.split('/')[-1].startswith('animations')
-           and name.endswith('.zip')
+        if name.split('/')[-1].startswith('animations') and name.endswith('.zip')
     ]
 
     if not animation_files:
@@ -303,10 +302,9 @@ async def logs_upload(
                         logging_str="Uploaded animations",
                     )
 
-            await ctx.followup.send(content=
-                                    f"Successfully uploaded logs to {len(completed_tlas)} teams: "
-                                    f"{', '.join(completed_tlas)}",
-                                    )
+            await ctx.followup.send(
+                content=f"Successfully uploaded logs to {len(completed_tlas)} teams: {', '.join(completed_tlas)}",
+            )
     except BadZipFile:
         await log_and_reply(ctx, f"# {zip_name} is not a valid ZIP file")
 

@@ -3,12 +3,12 @@ from typing import Mapping, TYPE_CHECKING
 import discord
 from discord import app_commands
 
-from src.commands.ui import TeamDeleteConfirm
+from sr.discord_bot.commands.ui import TeamDeleteConfirm
 
 if TYPE_CHECKING:
-    from src.bot import BotClient
+    from sr.discord_bot.bot import BotClient
 
-from src.constants import (
+from sr.discord_bot.constants import (
     ROLE_PREFIX,
     TEAM_LEADER_ROLE,
     TEAM_CATEGORY_NAME,
@@ -30,14 +30,15 @@ group = Team()
 
 
 def permissions(client: "BotClient", team: discord.Role) -> Mapping[
-    discord.Role | discord.Member, discord.PermissionOverwrite]:
+    discord.Role | discord.Member, discord.PermissionOverwrite,
+]:
     if not isinstance(client.guild, discord.Guild):
         return {}
 
     return {
         client.guild.default_role: discord.PermissionOverwrite(
             read_messages=False,
-            send_messages=False
+            send_messages=False,
         ),
         client.volunteer_role: discord.PermissionOverwrite(
             read_messages=True,
@@ -46,7 +47,7 @@ def permissions(client: "BotClient", team: discord.Role) -> Mapping[
         team: discord.PermissionOverwrite(
             read_messages=True,
             send_messages=True,
-        )
+        ),
     }
 
 
@@ -81,7 +82,7 @@ async def new_team(interaction: discord.interactions.Interaction["BotClient"], t
         name=f"{TEAM_CHANNEL_PREFIX}{tla.lower()}",
         topic=name,
         category=category,
-        overwrites=permissions(interaction.client, role)
+        overwrites=permissions(interaction.client, role),
     )
     interaction.client.set_password(tla, password)
     await interaction.response.send_message(f"{role.mention} and {channel.mention} created!", ephemeral=True)
@@ -124,7 +125,10 @@ async def delete_team(interaction: discord.interactions.Interaction["BotClient"]
             await role.delete(reason=reason)
             interaction.client.remove_password(tla)
 
-            if isinstance(interaction.channel, discord.abc.GuildChannel) and not interaction.channel.name.startswith(f"{TEAM_CHANNEL_PREFIX}{tla.lower()}"):
+            if (
+                isinstance(interaction.channel, discord.abc.GuildChannel)
+                and not interaction.channel.name.startswith(f"{TEAM_CHANNEL_PREFIX}{tla.lower()}")
+            ):
                 await interaction.edit_original_response(content=f"Team {tla.upper()} has been deleted")
     else:
         await interaction.delete_original_response()
@@ -151,7 +155,7 @@ async def create_voice(interaction: discord.interactions.Interaction["BotClient"
     channel = await guild.create_voice_channel(
         f"{TEAM_CHANNEL_PREFIX}{tla.lower()}",
         category=category,
-        overwrites=permissions(interaction.client, role)
+        overwrites=permissions(interaction.client, role),
     )
     await interaction.response.send_message(f"{channel.mention} created!", ephemeral=True)
 
@@ -190,7 +194,7 @@ async def create_team_channel(
         category=category,
         overwrites=permissions(interaction.client, role),
         position=main_channel.position + 1,
-        reason=TEAM_CREATED_REASON
+        reason=TEAM_CREATED_REASON,
     )
     await interaction.response.send_message(f"{new_channel.mention} created!", ephemeral=True)
 
@@ -246,7 +250,7 @@ async def export_team(
     if tla is None:
         for team_role in guild.roles:
             if team_role.name.startswith(ROLE_PREFIX) and team_role.name != TEAM_LEADER_ROLE:
-                output = output + await _export_team(team_role.name.removeprefix(ROLE_PREFIX), only_teams, guild, interaction)
+                output += await _export_team(team_role.name.removeprefix(ROLE_PREFIX), only_teams, guild, interaction)
     else:
         output = output + await _export_team(tla, only_teams, guild, interaction)
     output = output + "\n```"

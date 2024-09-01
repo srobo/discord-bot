@@ -4,7 +4,7 @@ from collections import defaultdict
 
 import discord
 
-from src.constants import ROLE_PREFIX
+from sr.discord_bot.constants import ROLE_PREFIX
 
 
 class TeamData(NamedTuple):

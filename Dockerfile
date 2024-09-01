@@ -2,9 +2,7 @@ FROM python:3.9-slim-bullseye
 
 WORKDIR /usr/src/app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN pip install --no-cache-dir .
 
-COPY src/* .
-
-CMD [ "python", "main.py" ]
+CMD [ "python", "-m", "sr.discord_bot" ]

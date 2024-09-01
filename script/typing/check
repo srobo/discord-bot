@@ -2,4 +2,4 @@
 if [ -z "$MYPY" ]; then
     MYPY=mypy
 fi
-exec "$MYPY" src/**.py
+exec "$MYPY" src/

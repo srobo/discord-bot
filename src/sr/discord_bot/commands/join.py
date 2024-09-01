@@ -4,9 +4,9 @@ import discord
 from discord import app_commands
 
 if TYPE_CHECKING:
-    from src.bot import BotClient
+    from sr.discord_bot.bot import BotClient
 
-from src.constants import (
+from sr.discord_bot.constants import (
     ROLE_PREFIX,
     SPECIAL_ROLE,
     SPECIAL_TEAM,
@@ -30,10 +30,12 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
 
     guild: discord.Guild | None = interaction.guild
     channel: discord.interactions.InteractionChannel | None = interaction.channel
-    if (guild is None
+    if (
+        guild is None
         or not isinstance(channel, discord.TextChannel)
         or channel is None
-        or not channel.name.startswith(CHANNEL_PREFIX)):
+        or not channel.name.startswith(CHANNEL_PREFIX)
+    ):
         return
 
     chosen_team = find_team(interaction.client, member, password)

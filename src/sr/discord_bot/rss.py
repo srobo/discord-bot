@@ -6,7 +6,7 @@ import feedparser
 from bs4 import BeautifulSoup
 from feedparser import FeedParserDict
 
-from src.constants import FEED_URL
+from sr.discord_bot.constants import FEED_URL
 
 
 def get_seen_posts() -> List[str]:

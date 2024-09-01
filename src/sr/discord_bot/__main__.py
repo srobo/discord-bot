@@ -5,7 +5,7 @@ import logging
 from dotenv import load_dotenv
 from discord import Intents
 
-from src.bot import BotClient
+from sr.discord_bot.bot import BotClient
 
 logger = logging.getLogger("srbot")
 logger.setLevel(logging.INFO)
