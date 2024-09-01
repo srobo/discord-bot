@@ -34,7 +34,7 @@ And voilà, any new users should automatically get their role assigned once they
 1. Set up discord to the correct settings (see above)
 2. Register a discord bot.
 3. Copy `.env` and fill it out with the application token and guild ID. In order to get the guild ID, you will need to enable developer mode in Discord's settings. Once enabled, right click the guild (server) in the sidebar and click `Copy Server ID`.
-4. `pip install -r requirements.txt`
-5. `python src/main.py`
+4. `pip install .`
+5. `python -m sr.discord_bot`
 6. In the server settings, ensure the `/join` command cannot be used by the `Verified` role
 7. Ensure the `/passwd` commands can only be used by `Blueshirt`s

@@ -3,12 +3,12 @@ from typing import Mapping, TYPE_CHECKING
 import discord
 from discord import app_commands
 
-from src.commands.ui import TeamDeleteConfirm
+from sr.discord_bot.commands.ui import TeamDeleteConfirm
 
 if TYPE_CHECKING:
-    from src.bot import BotClient
+    from sr.discord_bot.bot import BotClient
 
-from src.constants import (
+from sr.discord_bot.constants import (
     ROLE_PREFIX,
     TEAM_LEADER_ROLE,
     TEAM_CATEGORY_NAME,

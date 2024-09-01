@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import discord
 
 if TYPE_CHECKING:
-    from src.bot import BotClient
+    from sr.discord_bot.bot import BotClient
 
 
 class TeamDeleteConfirm(discord.ui.View):

@@ -4,9 +4,9 @@ import discord
 from discord import app_commands
 
 if TYPE_CHECKING:
-    from src.bot import BotClient
+    from sr.discord_bot.bot import BotClient
 
-from src.constants import (
+from sr.discord_bot.constants import (
     ROLE_PREFIX,
     SPECIAL_ROLE,
     SPECIAL_TEAM,

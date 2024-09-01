@@ -8,9 +8,9 @@ import discord
 from discord import app_commands
 from discord.ext import tasks
 
-from src.rss import check_posts
-from src.teams import TeamsData
-from src.constants import (
+from sr.discord_bot.rss import check_posts
+from sr.discord_bot.teams import TeamsData
+from sr.discord_bot.constants import (
     SPECIAL_ROLE,
     VERIFIED_ROLE,
     CHANNEL_PREFIX,
@@ -21,9 +21,9 @@ from src.constants import (
     ANNOUNCE_CHANNEL_NAME,
     WELCOME_CATEGORY_NAME,
 )
-from src.commands.join import join
-from src.commands.logs import logs
-from src.commands.team import (
+from sr.discord_bot.commands.join import join
+from sr.discord_bot.commands.logs import logs
+from sr.discord_bot.commands.team import (
     Team,
     new_team,
     delete_team,
@@ -31,7 +31,7 @@ from src.commands.team import (
     create_voice,
     create_team_channel,
 )
-from src.commands.stats import (
+from sr.discord_bot.commands.stats import (
     Stats,
     post_stats,
     stats_subscribe,
@@ -39,7 +39,7 @@ from src.commands.stats import (
     SUBSCRIBE_MSG_FILE,
     load_subscribed_messages,
 )
-from src.commands.passwd import passwd
+from sr.discord_bot.commands.passwd import passwd
 
 
 class BotClient(discord.Client):

@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 
 if TYPE_CHECKING:
-    from src.bot import BotClient
+    from sr.discord_bot.bot import BotClient
 
 @app_commands.command(  # type:ignore[arg-type]
     name='passwd',

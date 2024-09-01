@@ -14,10 +14,10 @@ import aiohttp
 import discord
 from discord import app_commands
 
-from src.constants import TEAM_CHANNEL_PREFIX
+from sr.discord_bot.constants import TEAM_CHANNEL_PREFIX
 
 if TYPE_CHECKING:
-    from src.bot import BotClient
+    from sr.discord_bot.bot import BotClient
 
 
 class AnimationHandling(Enum):

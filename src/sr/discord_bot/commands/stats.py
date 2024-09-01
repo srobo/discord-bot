@@ -5,10 +5,10 @@ from typing import Any, Dict, NamedTuple, TYPE_CHECKING
 import discord
 from discord import app_commands
 
-from src.constants import VOLUNTEER_ROLE
+from sr.discord_bot.constants import VOLUNTEER_ROLE
 
 if TYPE_CHECKING:
-    from src.bot import BotClient
+    from sr.discord_bot.bot import BotClient
 
 SUBSCRIBE_MSG_FILE = 'subscribed_messages.json'
 

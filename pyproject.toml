@@ -1,0 +1,23 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools"]
+
+[project]
+name = "sr.discord_bot"
+version = "2025.0.0"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "python-dotenv==1.0.1",
+    "discord.py==2.4.0",
+    "feedparser==6.0.11",
+    "beautifulsoup4==4.12.3",
+]
+classifiers = [
+    "Private :: Do Not Upload"
+]
+
+[project.optional-dependencies]
+dev = [
+    "types-beautifulsoup4",
+]
