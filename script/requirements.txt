@@ -60,6 +60,10 @@ tomli==2.0.1
     #   mypy
     #   pip-tools
     #   pyproject-hooks
+types-beautifulsoup4==4.12.0.20240511
+    # via -r script/requirements.in
+types-html5lib==1.1.11.20240806
+    # via types-beautifulsoup4
 typing-extensions==4.7.1
     # via mypy
 wheel==0.41.2

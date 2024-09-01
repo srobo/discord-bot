@@ -10,6 +10,7 @@ flake8-tuple
 
 # Type checking
 mypy
+types-beautifulsoup4
 
 # Requirements management
 pip-tools

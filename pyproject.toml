@@ -17,11 +17,6 @@ classifiers = [
     "Private :: Do Not Upload"
 ]
 
-[project.optional-dependencies]
-dev = [
-    "types-beautifulsoup4",
-]
-
 [tool.mypy]
 disallow_any_explicit = true
 disallow_any_generics = true
