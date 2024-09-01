@@ -39,6 +39,10 @@ strict_equality = true
 scripts_are_modules = true
 warn_unused_configs = true
 
+[[tool.mypy.overrides]]
+module = 'feedparser'
+ignore_missing_imports = true
+
 [tool.isort]
 atomic = true
 balanced_wrapping = true
