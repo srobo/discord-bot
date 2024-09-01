@@ -1,6 +1,3 @@
-# Runtime requirements
--r ../requirements.txt
-
 # Linting
 flake8
 flake8-builtins
