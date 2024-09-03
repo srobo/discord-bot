@@ -45,7 +45,7 @@ def create_embed(post: FeedParserDict) -> discord.Embed:
         description=text,
     )
 
-    if len(post.media_thumbnail) > 0:
-        embed.set_image(url=post.media_thumbnail[0]['url'])
+    if post.has_key('media_thumbnail'):
+        embed.set_image(url=post['media_thumbnail'][0]['url'])
 
     return embed
