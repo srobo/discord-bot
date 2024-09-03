@@ -39,7 +39,8 @@ class SubscribedMessage(NamedTuple):
 @app_commands.guild_only()
 @app_commands.default_permissions()
 class Stats(app_commands.Group):
-    pass
+    def __init__(self) -> None:
+        super().__init__(description="Posts team member statistics")
 
 
 @app_commands.command(name='post')  # type:ignore[arg-type]
