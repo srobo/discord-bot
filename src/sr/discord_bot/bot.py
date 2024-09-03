@@ -259,12 +259,14 @@ To gain access, you must use `/join` with the password for your group.
         if not hasattr(msg_channel, 'fetch_message'):
             # ignore for channels that don't support message editing
             return
-        message = await msg_channel.fetch_message(msg.message_id)
 
-        if message:  # message may have already been deleted manually
+        try:
+            message = await msg_channel.fetch_message(msg.message_id)
             chan_name = message.channel.name if hasattr(message.channel, 'name') else 'unknown channel'
             self.logger.info(f'Removing message in {chan_name} from {message.author.name}')
             await message.delete()  # remove message from discord
+        except discord.errors.NotFound:
+            self.logger.info(f"Message #{msg.message_id} doesn't exist, removing from subscribed messages")
 
         # remove message from subscription list and save to file
         self.subscribed_messages.remove(msg)
