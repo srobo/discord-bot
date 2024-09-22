@@ -29,6 +29,7 @@ from sr.discord_bot.commands.team import (
     delete_team,
     export_team,
     create_voice,
+    repair_permissions,
     create_team_channel,
 )
 from sr.discord_bot.commands.stats import (
@@ -77,6 +78,7 @@ class BotClient(discord.Client):
         team.add_command(create_voice)
         team.add_command(create_team_channel)
         team.add_command(export_team)
+        team.add_command(repair_permissions)
         self.tree.add_command(team, guild=self.guild)
         stats = Stats()
         stats.add_command(post_stats)

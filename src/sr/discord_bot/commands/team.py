@@ -76,6 +76,7 @@ async def new_team(interaction: discord.interactions.Interaction["BotClient"], t
     role = await guild.create_role(
         reason=TEAM_CREATED_REASON + interaction.user.name,
         name=role_name,
+        mentionable=True,
     )
     channel = await guild.create_text_channel(
         reason=TEAM_CREATED_REASON + interaction.user.name,
@@ -255,3 +256,37 @@ async def export_team(
         output = output + await _export_team(tla, only_teams, guild, interaction)
     output = output + "\n```"
     await interaction.followup.send(content=output, ephemeral=True)
+
+
+def _repair_permissions_status_msg(cur_team: int, num_teams: int) -> str:
+    return f"Repairing permissions... {cur_team}/{num_teams} teams processed"
+
+
+@group.command(  # type:ignore[arg-type]
+    name='repair-permissions',
+    description='Reset channel and team permissions',
+)
+async def repair_permissions(interaction: discord.interactions.Interaction["BotClient"]) -> None:
+    guild: discord.Guild | None = interaction.guild
+    if guild is None:
+        raise app_commands.NoPrivateMessage()
+
+    team_roles: list[discord.Role] = [t for t in guild.roles if t.name.startswith(ROLE_PREFIX)]
+
+    await interaction.response.defer(
+        thinking=True,
+        ephemeral=True,
+    )
+    await interaction.edit_original_response(content=_repair_permissions_status_msg(0, len(team_roles)))
+
+    for index, role in enumerate(team_roles):
+        tla = role.name.removeprefix(ROLE_PREFIX)
+        channels = [ch for ch in guild.channels if ch.name.startswith(TEAM_CHANNEL_PREFIX + tla)]
+        channel_permissions = permissions(interaction.client, role)
+        for channel in channels:
+            for channel_role, overwrites in channel_permissions.items():
+                await channel.set_permissions(target=channel_role, overwrite=overwrites)
+        await role.edit(mentionable=True)
+        await interaction.edit_original_response(content=_repair_permissions_status_msg(index + 1, len(team_roles)))
+
+    await interaction.edit_original_response(content="Repairing permissions... done!")
