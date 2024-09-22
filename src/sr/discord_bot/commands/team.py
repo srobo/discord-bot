@@ -271,7 +271,7 @@ async def repair_permissions(interaction: discord.interactions.Interaction["BotC
     if guild is None:
         raise app_commands.NoPrivateMessage()
 
-    team_roles: list[discord.Role] = [t for t in guild.roles if t.name.startswith(ROLE_PREFIX)]
+    team_roles = [role for role in guild.roles if role.name.startswith(ROLE_PREFIX)]
 
     await interaction.response.defer(
         thinking=True,
@@ -281,7 +281,11 @@ async def repair_permissions(interaction: discord.interactions.Interaction["BotC
 
     for index, role in enumerate(team_roles):
         tla = role.name.removeprefix(ROLE_PREFIX)
-        channels = [ch for ch in guild.channels if ch.name.startswith(TEAM_CHANNEL_PREFIX + tla)]
+        channels = [
+            channel
+            for channel in guild.channels
+            if channel.name.startswith(TEAM_CHANNEL_PREFIX + tla)
+        ]
         channel_permissions = permissions(interaction.client, role)
         for channel in channels:
             for channel_role, overwrites in channel_permissions.items():
