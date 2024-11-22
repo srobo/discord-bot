@@ -32,6 +32,7 @@ from sr.discord_bot.commands.team import (
     repair_permissions,
     create_team_channel,
 )
+from sr.discord_bot.commands.pin import pin_message, unpin_message
 from sr.discord_bot.commands.stats import (
     Stats,
     post_stats,
@@ -87,6 +88,8 @@ class BotClient(discord.Client):
         self.tree.add_command(stats, guild=self.guild)
         self.tree.add_command(join, guild=self.guild)
         self.tree.add_command(logs, guild=self.guild)
+        self.tree.add_command(pin_message, guild=self.guild)
+        self.tree.add_command(unpin_message, guild=self.guild)
         self.load_passwords()
         load_subscribed_messages(self)
 
