@@ -1,4 +1,6 @@
 # name of the category for new welcome channels to go.
+from discord import Permissions
+
 WELCOME_CATEGORY_NAME = "Welcome"
 
 # Name of the channel to announce welcome messages to.
@@ -15,8 +17,10 @@ VERIFIED_ROLE = "Verified"
 
 SPECIAL_TEAM = "SRZ"
 SPECIAL_ROLE = "Unverified Volunteer"
+BLUESHIRT_ONBOARDING_CHANNEL_NAME = "blueshirt-onboarding"
 
 VOLUNTEER_ROLE = "Blueshirt"
+ADMIN_ROLE = "Admin"
 
 PASSWORDS_CHANNEL_NAME = "role-passwords"
 
@@ -28,3 +32,52 @@ TEAM_LEADER_ROLE = "Team Supervisor"
 FEED_URL = "https://studentrobotics.org/feed.xml"
 FEED_CHANNEL_NAME = "blog"
 FEED_CHECK_INTERVAL = 60 * 3  # in seconds
+
+VERIFIED_PERMISSION_MASK = \
+    Permissions.read_messages.flag | \
+    Permissions.send_messages.flag | \
+    Permissions.send_messages_in_threads.flag | \
+    Permissions.create_public_threads.flag | \
+    Permissions.embed_links.flag | \
+    Permissions.attach_files.flag | \
+    Permissions.add_reactions.flag | \
+    Permissions.use_external_emojis.flag | \
+    Permissions.use_external_stickers.flag | \
+    Permissions.read_message_history.flag | \
+    Permissions.speak.flag | \
+    Permissions.stream.flag | \
+    Permissions.use_voice_activation.flag | \
+    Permissions.request_to_speak.flag | \
+    Permissions.change_nickname.flag
+
+PERMISSIONS = {
+    "everyone": Permissions(
+        Permissions.change_nickname.flag |
+        Permissions.read_message_history.flag |
+        Permissions.use_application_commands.flag
+    ),
+    "verified": Permissions(VERIFIED_PERMISSION_MASK),
+    "blueshirt": Permissions(
+        VERIFIED_PERMISSION_MASK |
+        Permissions.manage_roles.flag |
+        Permissions.manage_emojis_and_stickers.flag |
+        Permissions.view_audit_log.flag |
+        Permissions.manage_nicknames.flag |
+        Permissions.mention_everyone.flag |
+        Permissions.manage_threads.flag |
+        Permissions.connect.flag |
+        Permissions.mute_members.flag |
+        Permissions.deafen_members.flag |
+        Permissions.move_members.flag |
+        Permissions.create_events.flag |
+        Permissions.manage_events.flag
+    ),
+    "robots": Permissions(
+        Permissions.read_messages.flag |
+        Permissions.read_message_history.flag |
+        Permissions.manage_roles.flag |
+        Permissions.use_external_emojis.flag |
+        Permissions.use_application_commands.flag
+    ),
+    "admin": Permissions.elevated(),
+}

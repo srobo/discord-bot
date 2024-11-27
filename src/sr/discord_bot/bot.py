@@ -1,4 +1,3 @@
-import os
 import json
 import asyncio
 import logging
@@ -8,6 +7,7 @@ import discord
 from discord import app_commands
 from discord.ext import tasks
 
+from sr.discord_bot.guild import create_guild
 from sr.discord_bot.rss import check_posts
 from sr.discord_bot.teams import TeamsData
 from sr.discord_bot.constants import (
@@ -19,7 +19,7 @@ from sr.discord_bot.constants import (
     FEED_CHANNEL_NAME,
     FEED_CHECK_INTERVAL,
     ANNOUNCE_CHANNEL_NAME,
-    WELCOME_CATEGORY_NAME,
+    WELCOME_CATEGORY_NAME, BLUESHIRT_ONBOARDING_CHANNEL_NAME, ADMIN_ROLE,
 )
 from sr.discord_bot.commands.join import join
 from sr.discord_bot.commands.logs import logs
@@ -52,6 +52,7 @@ class BotClient(discord.Client):
     supervisor_role: discord.Role
     welcome_category: discord.CategoryChannel
     announce_channel: discord.TextChannel
+    blueshirt_onboarding_channel: discord.TextChannel
     passwords: dict[str, str]
     feed_channel: discord.TextChannel
     teams_data: TeamsData = TeamsData([])
@@ -67,11 +68,11 @@ class BotClient(discord.Client):
         super().__init__(loop=loop, intents=intents)
         self.logger = logger
         self.tree = app_commands.CommandTree(self)
-        guild_id = os.getenv('DISCORD_GUILD_ID')
-        if guild_id is None or not guild_id.isnumeric():
-            self.logger.error("Invalid guild ID")
-            exit(1)
-        self.guild = discord.Object(id=int(guild_id))
+        self._init_commands()
+        self._load_passwords()
+        load_subscribed_messages(self)
+
+    def _init_commands(self) -> None:
         team = Team()
         team.add_command(new_team)
         team.add_command(delete_team)
@@ -79,51 +80,47 @@ class BotClient(discord.Client):
         team.add_command(create_team_channel)
         team.add_command(export_team)
         team.add_command(repair_permissions)
-        self.tree.add_command(team, guild=self.guild)
+        self.tree.add_command(team)
         stats = Stats()
         stats.add_command(post_stats)
         stats.add_command(stats_subscribe)
-        self.tree.add_command(passwd, guild=self.guild)
-        self.tree.add_command(stats, guild=self.guild)
-        self.tree.add_command(join, guild=self.guild)
-        self.tree.add_command(logs, guild=self.guild)
-        self.load_passwords()
-        load_subscribed_messages(self)
+        self.tree.add_command(passwd)
+        self.tree.add_command(stats)
+        self.tree.add_command(join)
+        self.tree.add_command(logs)
 
     async def setup_hook(self) -> None:
-        # This copies the global commands over to your guild.
-        self.tree.copy_global_to(guild=self.guild)
-        await self.tree.sync(guild=self.guild)
+        await self.tree.sync()
         self.check_for_new_blog_posts.start()
 
     async def on_ready(self) -> None:
         self.logger.info(f"{self.user} has connected to Discord!")
-        guild = self.get_guild(self.guild.id)
-        if guild is None:
-            logging.error(f"Guild {self.guild.id} not found!")
+        for guild in self.guilds:
+            if guild.name == "Student Robotics 2026" and guild.owner == self.user:
+                self.logger.warning("Deleting old guild")
+                await guild.delete()
+        await create_guild(self)
+        if self.guild is None:
+            self.logger.error(f"Guild {self.guild.id} not found!")
             exit(1)
-        self.guild = guild
 
-        verified_role = discord.utils.get(guild.roles, name=VERIFIED_ROLE)
-        special_role = discord.utils.get(guild.roles, name=SPECIAL_ROLE)
-        volunteer_role = discord.utils.get(guild.roles, name=VOLUNTEER_ROLE)
-        supervisor_role = discord.utils.get(guild.roles, name=TEAM_LEADER_ROLE)
-        welcome_category = discord.utils.get(guild.categories, name=WELCOME_CATEGORY_NAME)
-        announce_channel = discord.utils.get(guild.text_channels, name=ANNOUNCE_CHANNEL_NAME)
-        feed_channel = discord.utils.get(guild.text_channels, name=FEED_CHANNEL_NAME)
+        roles = await self.guild.fetch_roles()
+        admin_role = discord.utils.get(roles, name=ADMIN_ROLE)
+        verified_role = discord.utils.get(roles, name=VERIFIED_ROLE)
+        special_role = discord.utils.get(roles, name=SPECIAL_ROLE)
+        volunteer_role = discord.utils.get(roles, name=VOLUNTEER_ROLE)
+        supervisor_role = discord.utils.get(roles, name=TEAM_LEADER_ROLE)
+        welcome_category = discord.utils.get(self.guild.categories, name=WELCOME_CATEGORY_NAME)
+        announce_channel = discord.utils.get(self.guild.text_channels, name=ANNOUNCE_CHANNEL_NAME)
+        feed_channel = discord.utils.get(self.guild.text_channels, name=FEED_CHANNEL_NAME)
+        blueshirt_onboarding_channel = discord.utils.get(self.guild.text_channels, name=BLUESHIRT_ONBOARDING_CHANNEL_NAME)
 
-        if (
-            verified_role is None
-            or special_role is None
-            or volunteer_role is None
-            or supervisor_role is None
-            or welcome_category is None
-            or announce_channel is None
-            or feed_channel is None
-        ):
-            logging.error("Roles and channels are not set up")
-            exit(1)
+        if not all([admin_role, verified_role, special_role, volunteer_role, supervisor_role,
+                    welcome_category, announce_channel, feed_channel, blueshirt_onboarding_channel]):
+            self.logger.error("Roles and channels are not set up")
+            # exit(1)
         else:
+            self.admin_role = admin_role
             self.verified_role = verified_role
             self.special_role = special_role
             self.volunteer_role = volunteer_role
@@ -131,14 +128,24 @@ class BotClient(discord.Client):
             self.welcome_category = welcome_category
             self.announce_channel = announce_channel
             self.feed_channel = feed_channel
+            self.blueshirt_onboarding_channel = blueshirt_onboarding_channel
 
         self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
         await self.update_subscribed_messages()
 
     async def on_member_join(self, member: discord.Member) -> None:
         name = member.display_name
-        self.logger.info(f"Member {name} joined")
+        self.logger.info(f"Member {name} ({member.id}) joined")
         guild: discord.Guild = member.guild
+
+        # Make the first user to join the server the owner of the server.
+        if guild.owner == guild.me:
+            await member.add_roles(self.volunteer_role, self.admin_role)
+            await member.guild.edit(owner=member)
+            await self.blueshirt_onboarding_channel.send(
+                f"{member.mention} You have been made the server owner. Please set a blueshirt password using `/passwd team:SRZ` and delete this message.")
+            return  # We don't need a welcome channel in this case.
+
         # Create a new channel with that user able to write
         channel: discord.TextChannel = await guild.create_text_channel(
             f'{CHANNEL_PREFIX}{name}',
@@ -180,23 +187,31 @@ To gain access, you must use `/join` with the password for your group.
 
             await self.update_subscribed_messages()
 
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
-        """Remove subscribed messages by reacting with a cross mark."""
-        if payload.emoji.name != '\N{CROSS MARK}':
-            return
-        if SubscribedMessage(payload.channel_id, payload.message_id) not in self.subscribed_messages:
-            # Ignore for messages not in the subscribed list
-            return
-        if payload.member is None:
-            # Ignore for users not in the server
-            return
-        if self.volunteer_role not in payload.member.roles:
-            # Ignore for users without admin privileges
+    async def on_raw_reaction_add(self, event: discord.RawReactionActionEvent) -> None:
+        """Handle message reactions."""
+        if event.member.id == self.user.id:
+            # Ignore reactions from the bot itself
             return
 
-        await self.remove_subscribed_message(
-            SubscribedMessage(payload.channel_id, payload.message_id),
-        )
+        # Grant the volunteer role when the user reacts with a check mark in the blueshirt onboarding channel.
+        if event.channel_id == self.blueshirt_onboarding_channel.id and event.emoji.name == '\N{WHITE HEAVY CHECK MARK}':
+            await event.member.add_roles(self.volunteer_role)
+
+        # Remove subscribed messages by reacting with a cross mark.
+        if event.emoji.name == '\N{CROSS MARK}':
+            if SubscribedMessage(event.channel_id, event.message_id) not in self.subscribed_messages:
+                # Ignore for messages not in the subscribed list
+                return
+            if event.member is None:
+                # Ignore for users not in the server
+                return
+            if self.volunteer_role not in event.member.roles:
+                # Ignore for users without admin privileges
+                return
+
+            await self.remove_subscribed_message(
+                SubscribedMessage(event.channel_id, event.message_id),
+            )
 
     def _save_subscribed_messages(self) -> None:
         """Save subscribed messages to file."""
@@ -208,6 +223,9 @@ To gain access, you must use `/join` with the password for your group.
 
     @tasks.loop(seconds=FEED_CHECK_INTERVAL)
     async def check_for_new_blog_posts(self) -> None:
+        if not hasattr(self, 'feed_channel'):
+            return
+
         self.logger.info("Checking for new blog posts")
         await check_posts(self.feed_channel)
 
@@ -215,7 +233,7 @@ To gain access, you must use `/join` with the password for your group.
     async def before_check_for_new_blog_posts(self) -> None:
         await self.wait_until_ready()
 
-    def load_passwords(self) -> None:
+    def _load_passwords(self) -> None:
         """
         Returns a mapping from role name to the password for that role.
 
@@ -276,6 +294,9 @@ To gain access, you must use `/join` with the password for your group.
 
     async def update_subscribed_messages(self) -> None:
         """Update all subscribed messages."""
+        if not self.is_ready():
+            return
+
         self.logger.info('Updating subscribed messages')
         for sub_msg in self.subscribed_messages:  # edit all subscribed messages
             message = self.stats_message(
