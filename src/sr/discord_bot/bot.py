@@ -21,6 +21,7 @@ from sr.discord_bot.constants import (
     ANNOUNCE_CHANNEL_NAME,
     WELCOME_CATEGORY_NAME,
 )
+from sr.discord_bot.commands.pin import pin_message, unpin_message
 from sr.discord_bot.commands.join import join
 from sr.discord_bot.commands.logs import logs
 from sr.discord_bot.commands.team import (
@@ -32,7 +33,6 @@ from sr.discord_bot.commands.team import (
     repair_permissions,
     create_team_channel,
 )
-from sr.discord_bot.commands.pin import pin_message, unpin_message
 from sr.discord_bot.commands.stats import (
     Stats,
     post_stats,

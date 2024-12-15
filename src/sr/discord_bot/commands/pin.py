@@ -6,9 +6,10 @@ from discord import app_commands
 if TYPE_CHECKING:
     from sr.discord_bot.bot import BotClient
 
-@app_commands.command(
+
+@app_commands.command(  # type:ignore[arg-type]
     name='pin',
-    description='Pin a message to the channel'
+    description='Pin a message to the channel',
 )
 @app_commands.describe(
     message_url='Link of the message to pin',
@@ -22,15 +23,14 @@ async def pin_message(
     channel = cast(discord.TextChannel, interaction.channel)
     message_id = int(message_url.split('/')[-1])
     message = await channel.fetch_message(message_id)
-    if message is None:
-        return
     reason = "Pinned by " + interaction.user.mention
     await message.pin(reason=reason)
     await interaction.response.send_message(f"_{reason}_")
 
-@app_commands.command(
+
+@app_commands.command(  # type:ignore[arg-type]
     name='unpin',
-    description='Unpin a message from the channel'
+    description='Unpin a message from the channel',
 )
 @app_commands.describe(
     message_url='Link of the message to unpin',
@@ -44,8 +44,6 @@ async def unpin_message(
     channel = cast(discord.TextChannel, interaction.channel)
     message_id = int(message_url.split('/')[-1])
     message = await channel.fetch_message(message_id)
-    if message is None:
-        return
     reason = "Unpinned by " + interaction.user.mention
     await message.unpin(reason=reason)
     await interaction.response.send_message(f"_{reason}_")
