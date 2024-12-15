@@ -1,8 +1,8 @@
 import os
 import sys
 import logging
-import sentry_sdk
 
+import sentry_sdk
 from dotenv import load_dotenv
 from discord import Intents
 
