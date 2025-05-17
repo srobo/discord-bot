@@ -69,7 +69,7 @@ class BotClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
         guild_id = os.getenv('DISCORD_GUILD_ID')
         if guild_id is None or not guild_id.isnumeric():
-            self.logger.error("Invalid guild ID: %r", guild_id)
+            self.logger.critical("Invalid guild ID: %r", guild_id)
             exit(1)
         self.guild = discord.Object(id=int(guild_id))
         team = Team()
@@ -153,7 +153,7 @@ class BotClient(discord.Client):
             self.feed_channel = feed_channel
 
         if not setup_correctly:
-            self.logger.error("Roles and channels are not set up correctly - Terminating.")
+            self.logger.critical("Roles and channels are not set up correctly - Terminating.")
             exit(1)
 
         self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
