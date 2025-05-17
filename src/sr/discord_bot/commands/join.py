@@ -57,7 +57,11 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
         # Add them to that specific role
         specific_role = discord.utils.get(guild.roles, name=role_name)
         if specific_role is None:
-            interaction.client.logger.error(f"Specified role '{chosen_team}' does not exist")
+            interaction.client.logger.error(
+                "Specified role %r does not exist - unable to assign to %s",
+                role_name,
+                member.name,
+            )
         else:
             await member.add_roles(
                 specific_role,
