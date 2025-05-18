@@ -69,7 +69,7 @@ class BotClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
         guild_id = os.getenv('DISCORD_GUILD_ID')
         if guild_id is None or not guild_id.isnumeric():
-            self.logger.error("Invalid guild ID")
+            self.logger.critical("Invalid guild ID: %r", guild_id)
             exit(1)
         self.guild = discord.Object(id=int(guild_id))
         team = Team()
@@ -98,39 +98,63 @@ class BotClient(discord.Client):
 
     async def on_ready(self) -> None:
         self.logger.info(f"{self.user} has connected to Discord!")
-        guild = self.get_guild(self.guild.id)
-        if guild is None:
-            logging.error(f"Guild {self.guild.id} not found!")
+
+        if (guild := self.get_guild(self.guild.id)) is None:
+            self.logger.error("Guild not found: %r", self.guild.id)
+
+            # If the guild can't be refreshed, terminate here rather than continuing to
+            # validate known-stale data.
             exit(1)
+
         self.guild = guild
 
-        verified_role = discord.utils.get(guild.roles, name=VERIFIED_ROLE)
-        special_role = discord.utils.get(guild.roles, name=SPECIAL_ROLE)
-        volunteer_role = discord.utils.get(guild.roles, name=VOLUNTEER_ROLE)
-        supervisor_role = discord.utils.get(guild.roles, name=TEAM_LEADER_ROLE)
-        welcome_category = discord.utils.get(guild.categories, name=WELCOME_CATEGORY_NAME)
-        announce_channel = discord.utils.get(guild.text_channels, name=ANNOUNCE_CHANNEL_NAME)
-        feed_channel = discord.utils.get(guild.text_channels, name=FEED_CHANNEL_NAME)
+        setup_correctly = True
 
-        if (
-            verified_role is None
-            or special_role is None
-            or volunteer_role is None
-            or supervisor_role is None
-            or welcome_category is None
-            or announce_channel is None
-            or feed_channel is None
-        ):
-            logging.error("Roles and channels are not set up")
-            exit(1)
+        if (verified_role := discord.utils.get(guild.roles, name=VERIFIED_ROLE)) is None:
+            self.logger.error("Unable to find role: %r", VERIFIED_ROLE)
+            setup_correctly = False
         else:
             self.verified_role = verified_role
+
+        if (special_role := discord.utils.get(guild.roles, name=SPECIAL_ROLE)) is None:
+            self.logger.error("Unable to find role: %r", SPECIAL_ROLE)
+            setup_correctly = False
+        else:
             self.special_role = special_role
+
+        if (volunteer_role := discord.utils.get(guild.roles, name=VOLUNTEER_ROLE)) is None:
+            self.logger.error("Unable to find volunteer role: %r", VOLUNTEER_ROLE)
+            setup_correctly = False
+        else:
             self.volunteer_role = volunteer_role
+
+        if (supervisor_role := discord.utils.get(guild.roles, name=TEAM_LEADER_ROLE)) is None:
+            self.logger.error("Unable to find team supervisor role: %r", VOLUNTEER_ROLE)
+            setup_correctly = False
+        else:
             self.supervisor_role = supervisor_role
+
+        if (welcome_category := discord.utils.get(guild.categories, name=WELCOME_CATEGORY_NAME)) is None:
+            self.logger.error("Unable to find welcome category: %r", WELCOME_CATEGORY_NAME)
+            setup_correctly = False
+        else:
             self.welcome_category = welcome_category
+
+        if (announce_channel := discord.utils.get(guild.text_channels, name=ANNOUNCE_CHANNEL_NAME)) is None:
+            self.logger.error("Unable to find announcement channel: %r", ANNOUNCE_CHANNEL_NAME)
+            setup_correctly = False
+        else:
             self.announce_channel = announce_channel
+
+        if (feed_channel := discord.utils.get(guild.text_channels, name=FEED_CHANNEL_NAME)) is None:
+            self.logger.error("Unable to find feed channel: %r", FEED_CHANNEL_NAME)
+            setup_correctly = False
+        else:
             self.feed_channel = feed_channel
+
+        if not setup_correctly:
+            self.logger.critical("Roles and channels are not set up correctly - Terminating.")
+            exit(1)
 
         self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
         await self.update_subscribed_messages()

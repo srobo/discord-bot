@@ -97,7 +97,7 @@ async def get_team_channel(
     if not isinstance(tla_search, re.Match):
         await log_and_reply(
             ctx,
-            f"# Failed to extract a TLA from {archive_name} in {zip_name}",
+            f"# Failed to extract a TLA from {archive_name!r} in {zip_name}",
         )
         return '', None
 
@@ -125,7 +125,7 @@ def pre_test_zipfile(archive_name: str, zip_name: str) -> bool:
 def match_animation_files(log_name: str, animation_dir: Path) -> List[Path]:
     match_num_search = re.search(r'match-([0-9]+)', log_name)
     if not isinstance(match_num_search, re.Match):
-        logger.warning(f'Invalid match name: {log_name}')
+        logger.warning('Invalid match name %r when sending logs', log_name)
         return []
     match_num = match_num_search[1]
     logger.debug(f"Fetching animation files for match {match_num}")
@@ -191,18 +191,18 @@ async def send_file(
 
 
 def extract_animations(zipfile: ZipFile, tmpdir: Path, fully_extract: bool) -> bool:
-    animation_files = [
-        name for name in zipfile.namelist()
-        if name.split('/')[-1].startswith('animations') and name.endswith('.zip')
-    ]
-
-    if not animation_files:
-        return False
-
     try:
+        animation_files = [
+            name for name in zipfile.namelist()
+            if name.split('/')[-1].startswith('animations') and name.endswith('.zip')
+        ]
+
+        if not animation_files:
+            return False
+
         zipfile.extract(animation_files[0], path=tmpdir)
     except BadZipFile:
-        logger.warning("The animations zip was corrupt")
+        logger.exception("The animations zip was corrupt")
         return False
 
     # give the animations archive + folder if fixed name
