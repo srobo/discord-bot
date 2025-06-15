@@ -1,3 +1,4 @@
+import json
 import logging
 import pathlib
 import webbrowser
@@ -6,7 +7,6 @@ from typing import TYPE_CHECKING
 
 import discord.enums
 from discord import Guild, TextChannel, PartialEmoji, ForumTag
-from discord.ui import View
 
 from sr.discord_bot.constants import WELCOME_CATEGORY_NAME, PERMISSIONS, BLUESHIRT_ONBOARDING_CHANNEL_NAME, \
     SPECIAL_ROLE, ADMIN_ROLE, VOLUNTEER_ROLE, VERIFIED_ROLE
@@ -45,6 +45,8 @@ async def create_guild(client: "BotClient") -> None:
     rules = await create_channels(client, client.guild)
     await send_template_messages(client, client.guild)
     invite = await rules.create_invite()
+    with open(".env", "a", encoding="utf-8") as f:
+        f.write("\nDISCORD_GUILD_ID=" + str(client.guild.id) + "\n")
     print(f"Invite link: {invite.url}")
     webbrowser.open(invite.url)
 
@@ -87,7 +89,9 @@ async def create_channels(client: "BotClient", guild: Guild) -> TextChannel:
         await channel.delete()
 
     cat_info = await guild.create_category("Information")
-    rules = await guild.create_text_channel("welcome-and-rules", category=cat_info)
+    rules = await guild.create_text_channel("welcome-and-rules", category=cat_info, overwrites={
+        guild.default_role: discord.PermissionOverwrite(read_messages=True, send_messages=False),
+    })
     announcements = await guild.create_text_channel("announcements", category=cat_info, overwrites={
         guild.default_role: discord.PermissionOverwrite(send_messages=False),
         client.volunteer_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
@@ -163,10 +167,17 @@ async def send_template_messages(client: "BotClient", guild: Guild):
         if isinstance(channel, TextChannel):
             messages = await template(client, guild, channel_name)
 
-            for message in messages:
-                if channel.name == BLUESHIRT_ONBOARDING_CHANNEL_NAME and "Step 4" in message:
-                    await post_message(channel, message, view=BlueshirtConfirmView())
+            for index, message in enumerate(messages):
+                if channel.name == BLUESHIRT_ONBOARDING_CHANNEL_NAME and "Step 3" in message:
+                    result = await post_message(channel, message, view=BlueshirtConfirmView())
                 else:
-                    await post_message(channel, message)
+                    result = await post_message(channel, message)
+
+                if result is not None:
+                    if channel.id not in client.bot_messages:
+                        client.bot_messages[channel.id] = []
+                    client.bot_messages[channel.id].append(result.id)
+    with open("bot_messages.json", "w", encoding="utf-8") as f:
+        json.dump(client.bot_messages, f)
     logging.info("Template messages sent")
 

@@ -1,6 +1,7 @@
 import json
 import asyncio
 import logging
+import os
 from typing import List
 
 import discord
@@ -8,6 +9,7 @@ from discord import app_commands
 from discord.ext import tasks
 
 from sr.discord_bot.guild import create_guild
+from sr.discord_bot.messages import check_bot_messages
 from sr.discord_bot.rss import check_posts
 from sr.discord_bot.teams import TeamsData
 from sr.discord_bot.constants import (
@@ -46,6 +48,8 @@ from sr.discord_bot.commands.passwd import passwd
 class BotClient(discord.Client):
     logger: logging.Logger
     guild: discord.Guild | discord.Object
+    bot_messages: dict[int, list[int]] = {}
+    admin_role: discord.Role
     verified_role: discord.Role
     special_role: discord.Role
     volunteer_role: discord.Role
@@ -95,14 +99,11 @@ class BotClient(discord.Client):
 
     async def on_ready(self) -> None:
         self.logger.info(f"{self.user} has connected to Discord!")
-        for guild in self.guilds:
-            if guild.name == "Student Robotics 2026" and guild.owner == self.user:
-                self.logger.warning("Deleting old guild")
-                await guild.delete()
-        await create_guild(self)
-        if self.guild is None:
-            self.logger.error(f"Guild {self.guild.id} not found!")
-            exit(1)
+        guild_id = os.getenv('DISCORD_GUILD_ID')
+        if guild_id and guild_id.isnumeric() and (guild := self.get_guild(int(guild_id))):
+            self.guild = guild
+        else:
+            await create_guild(self)
 
         roles = await self.guild.fetch_roles()
         admin_role = discord.utils.get(roles, name=ADMIN_ROLE)
@@ -113,12 +114,12 @@ class BotClient(discord.Client):
         welcome_category = discord.utils.get(self.guild.categories, name=WELCOME_CATEGORY_NAME)
         announce_channel = discord.utils.get(self.guild.text_channels, name=ANNOUNCE_CHANNEL_NAME)
         feed_channel = discord.utils.get(self.guild.text_channels, name=FEED_CHANNEL_NAME)
-        blueshirt_onboarding_channel = discord.utils.get(self.guild.text_channels, name=BLUESHIRT_ONBOARDING_CHANNEL_NAME)
+        blueshirt_onboarding_channel = discord.utils.get(self.guild.text_channels,
+                                                         name=BLUESHIRT_ONBOARDING_CHANNEL_NAME)
 
         if not all([admin_role, verified_role, special_role, volunteer_role, supervisor_role,
                     welcome_category, announce_channel, feed_channel, blueshirt_onboarding_channel]):
             self.logger.error("Roles and channels are not set up")
-            # exit(1)
         else:
             self.admin_role = admin_role
             self.verified_role = verified_role
@@ -130,6 +131,7 @@ class BotClient(discord.Client):
             self.feed_channel = feed_channel
             self.blueshirt_onboarding_channel = blueshirt_onboarding_channel
 
+        await check_bot_messages(self, self.guild)
         self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
         await self.update_subscribed_messages()
 

@@ -1,9 +1,12 @@
+import json
 from pathlib import Path
 from string import Template
 from typing import TYPE_CHECKING
 
 from discord import File, TextChannel, Guild, Emoji, Message
 from discord.utils import get
+
+from sr.discord_bot.ui import BlueshirtConfirmView
 
 if TYPE_CHECKING:
     from sr.discord_bot.bot import BotClient
@@ -18,7 +21,45 @@ EMOJI_REGEX = re.compile(r":(?P<name>[A-Za-z0-9_]+):")
 CHANNEL_REGEX = re.compile(r"#(?P<name>[\w-]+)")
 
 
-def get_channel(guild: Guild, match: re.Match) -> str:
+async def check_bot_messages(client: "BotClient", guild: Guild) -> None:
+    try:
+        with open("bot_messages.json") as f:
+            client.bot_messages = json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        with open('bot_messages.json', 'w') as f:
+            f.write('{}')
+
+    for channel_id, message_ids in client.bot_messages.items():
+        channel = guild.get_channel(int(channel_id))
+        new_contents = await template(client, guild, channel.name)
+        max_seen_index = -1
+
+        for index, message_id in enumerate(message_ids):
+            try:
+                existing_message = await channel.fetch_message(message_id)
+                if existing_message is not None and existing_message.content != "":
+                    max_seen_index = index
+                    if existing_message.content != new_contents[index].strip():
+                        await existing_message.edit(content=new_contents[index].strip())
+                    for component in existing_message.components:
+                        if any([child.custom_id == "blueshirt-confirm" for child in component.children]):
+                            client.add_view(BlueshirtConfirmView(), message_id=existing_message.id)
+                            print(f"Subscribed to events from message {existing_message.id}")
+            except Exception as e:
+                print(f"Error retrieving message {message_id} in {channel.name}: {e}")
+
+        for index, content in enumerate(new_contents):
+            if index <= max_seen_index:
+                continue
+            sent = await post_message(channel, new_contents[index])
+            client.bot_messages[channel_id].append(sent.id)
+
+    with open("bot_messages.json", "w", encoding="utf-8") as f:
+        json.dump(client.bot_messages, f)
+
+
+
+def channel_mention(guild: Guild, match: re.Match) -> str:
     """Get a channel by its name in the given guild."""
     groups = match.groupdict()
     if "name" in groups:
@@ -52,7 +93,7 @@ async def template(
 
     full_text = re.sub(
         CHANNEL_REGEX,
-        lambda m: get_channel(guild, m),
+        lambda m: channel_mention(guild, m),
         full_text,
     )
 
