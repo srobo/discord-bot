@@ -33,7 +33,9 @@ FORUM_TAGS = {
 async def create_guild(client: "BotClient") -> None:
     year = datetime.today().year + 1
     icon = pathlib.Path('images/icon.png').read_bytes()
+    logging.info(f"Creating guild for {year}")
     client.guild = await client.create_guild(name=f"Student Robotics {year}", icon=icon)
+    logging.info("Guild created with ID " + str(client.guild.id))
     for channel in client.guild.channels:
         await channel.delete()
     await client.guild.edit(
