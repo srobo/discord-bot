@@ -99,6 +99,7 @@ class BotClient(discord.Client):
 
     async def on_ready(self) -> None:
         self.logger.info(f"{self.user} has connected to Discord!")
+        await self.list_guilds()
         guild_id = os.getenv('DISCORD_GUILD_ID')
         if guild_id and guild_id.isnumeric() and (guild := self.get_guild(int(guild_id))):
             self.guild = guild
@@ -317,3 +318,10 @@ To gain access, you must use `/join` with the password for your group.
                 await msg.edit(content=message)
             except discord.errors.NotFound:  # message is no longer available
                 await self.remove_subscribed_message(sub_msg)
+
+    async def list_guilds(self) -> None:
+        self.logger.info("This bot is currently part of the following guilds:")
+        for guild in self.guilds:
+            self.logger.info(f"- {guild.name} (ID: {guild.id})")
+            self.logger.info(f"  Owner: {guild.owner} (ID: {guild.owner_id})")
+            self.logger.info(f"  {guild.member_count} members")
