@@ -1,0 +1,119 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$defs:
+  permissions:
+    type: object
+    properties:
+      everyone:
+        description: "@everyone"
+        $ref: '#/$defs/overwrites'
+      verified:
+        description: "Verified Member"
+        $ref: '#/$defs/overwrites'
+      blueshirt:
+        description: "Verified blueshirt"
+        $ref: '#/$defs/overwrites'
+      supervisor:
+        description: "Team Supervisor"
+        $ref: '#/$defs/overwrites'
+      unverified_blueshirt:
+        description: "Unverified Blueshirt"
+        $ref: '#/$defs/overwrites'
+  overwrites:
+    type: object
+    properties:
+      read_message_history:
+        type: boolean
+      read_messages:
+        type: boolean
+      send_messages:
+        type: boolean
+      connect:
+        type: boolean
+      speak:
+        type: boolean
+      use_voice_activation:
+        type: boolean
+      use_stage_activation:
+        type: boolean
+      manage_messages:
+        type: boolean
+      manage_channels:
+        type: boolean
+      manage_permissions:
+        type: boolean
+      manage_webhooks:
+        type: boolean
+      create_instant_invite:
+        type: boolean
+      embed_links:
+        type: boolean
+      attach_files:
+        type: boolean
+      add_reactions:
+        type: boolean
+      mention_everyone:
+        type: boolean
+  channel_type:
+    type: string
+    enum:
+      - text
+      - voice
+      - forum
+      - stage
+  channel:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: Name of the channel
+        examples:
+          - off-topic
+          - rules
+      topic:
+        type: string
+      channel_type:
+        description: Channel type, defaults to text
+        $ref: '#/$defs/channel_type'
+      use_case:
+        type: string
+        title: Channel use case
+        enum:
+          - rules
+          - feed
+          - audit
+          - stats
+          - announce
+          - discord
+      permissions:
+        $ref: '#/$defs/permissions'
+    if:
+      properties:
+        channel_type:
+          const: forum
+    then:
+      properties:
+        tags:
+          type: array
+        default_reaction_emoji:
+          type: string
+  category:
+    type: object
+    required:
+      - name
+      - channels
+    properties:
+      name:
+        type: string
+      channels:
+        type: array
+        items:
+          $ref: '#/$defs/channel'
+      permissions:
+        $ref: '#/$defs/permissions'
+
+
+type: array
+items:
+  $ref: '#/$defs/category'

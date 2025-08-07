@@ -5,12 +5,16 @@ import os
 from typing import List
 
 import discord
+import jsonschema
+import yaml
 from discord import app_commands
 from discord.ext import tasks
 
+from sr.discord_bot.channel import ChannelSet
 from sr.discord_bot.guild import create_guild
 from sr.discord_bot.messages import check_bot_messages
 from sr.discord_bot.rss import check_posts
+from sr.discord_bot.schema import CategoryChannelDefinition
 from sr.discord_bot.teams import TeamsData
 from sr.discord_bot.constants import (
     SPECIAL_ROLE,
@@ -320,8 +324,27 @@ To gain access, you must use `/join` with the password for your group.
                 await self.remove_subscribed_message(sub_msg)
 
     async def list_guilds(self) -> None:
+        with open('channels.yml', 'r+') as f:
+            stored_defs = yaml.load(f, Loader=yaml.Loader)
+        with open('channels.schema.yml', 'r+') as f:
+            schema = yaml.load(f, Loader=yaml.Loader)
+        jsonschema.validate(stored_defs, schema)
+
         self.logger.info("This bot is currently part of the following guilds:")
         for guild in self.guilds:
             self.logger.info(f"- {guild.name} (ID: {guild.id})")
+            if os.getenv('DISCORD_GUILD_ID') and str(guild.id) == os.getenv('DISCORD_GUILD_ID'):
+                self.logger.info("  This is the configured guild.")
+                # Output diff
+                definitions = [CategoryChannelDefinition.load(cat) for cat in stored_defs]
+                stored_set = ChannelSet.from_definitions(definitions)
+                current_set = ChannelSet.from_guild(guild)
+                diff = ChannelSet.diff(current_set, stored_set)
+                if len(diff) > 0:
+                    self.logger.warning(f"  It has {len(diff)} changes pending:")
+                    for change in diff:
+                        self.logger.warning(f"    {change}")
+                else:
+                    self.logger.info("  No pending channel changes.")
             self.logger.info(f"  Owner: {guild.owner} (ID: {guild.owner_id})")
             self.logger.info(f"  {guild.member_count} members")

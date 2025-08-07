@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import pathlib
 import webbrowser
 from datetime import datetime
@@ -32,9 +33,11 @@ FORUM_TAGS = {
 
 async def create_guild(client: "BotClient") -> None:
     year = datetime.today().year + 1
-    icon = pathlib.Path('images/icon.png').read_bytes()
-    logging.info(f"Creating guild for {year}")
-    client.guild = await client.create_guild(name=f"Student Robotics {year}", icon=icon)
+    icon = pathlib.Path(os.getenv('SR_DISCORD_ICON') or 'images/icon.png').read_bytes()
+    suffix = os.getenv('SR_GUILD_SUFFIX') if 'SR_GUILD_SUFFIX' in os.environ else year
+    name=f"Student Robotics {suffix}"
+    logging.info(f"Creating guild with name \"{name}\"")
+    client.guild = await client.create_guild(name=name, icon=icon)
     logging.info("Guild created with ID " + str(client.guild.id))
     for channel in client.guild.channels:
         await channel.delete()
