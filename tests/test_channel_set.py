@@ -14,7 +14,7 @@ def test_create_category():
     commands = ChannelSet.diff(blank, channel_set)
 
     assert commands == [
-        CreateCategoryCommand("Test Category", overwrites={})
+        CreateCategoryCommand("Test Category", overwrites=None)
     ]
 
 def test_delete_category():
@@ -23,7 +23,7 @@ def test_delete_category():
 
     commands = ChannelSet.diff(channel_set, blank)
 
-    assert commands == [DeleteChannelCommand("Test Category")]
+    assert commands == [DeleteChannelCommand("Test Category", is_category=True)]
 
 def test_rename_category():
     channel_set_old = ChannelSet()
@@ -35,7 +35,7 @@ def test_rename_category():
     commands = ChannelSet.diff(channel_set_old, channel_set_new)
 
     assert commands == [
-        AlterChannelCommand(old_name="Old Name", new_name="New Name"),
+        AlterChannelCommand(old_name="Old Name", new_name="New Name", is_category=True),
     ]
 
 def test_create_category_if_old_name_not_found():
@@ -48,8 +48,8 @@ def test_create_category_if_old_name_not_found():
     commands = ChannelSet.diff(channel_set_old, channel_set_new)
 
     assert commands == [
-        DeleteChannelCommand("Old Category"),
-        CreateCategoryCommand("New Category", overwrites={}),
+        DeleteChannelCommand("Old Category", is_category=True),
+        CreateCategoryCommand("New Category", overwrites=None),
     ]
 
 def test_create_multiple_categories():
@@ -60,8 +60,8 @@ def test_create_multiple_categories():
     commands = ChannelSet.diff(blank, channel_set)
 
     assert commands == [
-        CreateCategoryCommand("Category 1", overwrites={}),
-        CreateCategoryCommand("Category 2", overwrites={}),
+        CreateCategoryCommand("Category 1", overwrites=None),
+        CreateCategoryCommand("Category 2", overwrites=None),
     ]
 
 def test_create_category_with_overwrites():
@@ -97,8 +97,8 @@ def test_move_category():
     commands = ChannelSet.diff(channel_set_old, channel_set_new)
 
     assert commands == [
-        AlterChannelCommand("Category 2", new_name="Category 2", position=0),
-        AlterChannelCommand("Category 1", new_name="Category 1", position=1),
+        AlterChannelCommand("Category 2", new_name="Category 2", position=0, is_category=True),
+        AlterChannelCommand("Category 1", new_name="Category 1", position=1, is_category=True),
     ]
 
 def test_move_category_to_end():
@@ -115,9 +115,9 @@ def test_move_category_to_end():
     commands = ChannelSet.diff(channel_set_old, channel_set_new)
 
     assert commands == [
-        AlterChannelCommand("Category 2", new_name="Category 2", position=0),
-        AlterChannelCommand("Category 3", new_name="Category 3", position=1),
-        AlterChannelCommand("Category 1", new_name="Category 1", position=2),
+        AlterChannelCommand("Category 2", new_name="Category 2", position=0, is_category=True),
+        AlterChannelCommand("Category 3", new_name="Category 3", position=1, is_category=True),
+        AlterChannelCommand("Category 1", new_name="Category 1", position=2, is_category=True),
     ]
 
 def test_create_text_channel():
@@ -128,8 +128,8 @@ def test_create_text_channel():
     commands = ChannelSet.diff(blank, channel_set)
 
     assert commands == [
-        CreateCategoryCommand("Test Category", overwrites={}),
-        CreateChannelCommand("Test Channel", type=discord.ChannelType.text, overwrites={}, category=category, topic=""),
+        CreateCategoryCommand("Test Category", overwrites=None),
+        CreateChannelCommand("Test Channel", type=discord.ChannelType.text, overwrites=None, category=category, topic=""),
     ]
 
 def test_delete_text_channel():
@@ -181,21 +181,21 @@ def test_create_text_channel_if_old_name_not_found():
 
     assert commands == [
         DeleteChannelCommand("Old Channel Name"),
-        CreateChannelCommand("New Channel Name", overwrites={}, type=discord.ChannelType.text, category=category, topic=""),
+        CreateChannelCommand("New Channel Name", overwrites=None, type=discord.ChannelType.text, category=category, topic=""),
     ]
 
 def test_create_multiple_text_channels():
     channel_set = ChannelSet()
     category = channel_set.create_category("Test Category")
-    channel_set.create_text_channel("Channel 1", overwrites={}, category=category)
-    channel_set.create_text_channel("Channel 2", overwrites={}, category=category)
+    channel_set.create_text_channel("Channel 1", overwrites=None, category=category)
+    channel_set.create_text_channel("Channel 2", overwrites=None, category=category)
 
     commands = ChannelSet.diff(blank, channel_set)
 
     assert commands == [
-        CreateCategoryCommand("Test Category", overwrites={}),
-        CreateChannelCommand("Channel 1", overwrites={}, type=discord.ChannelType.text, category=category, topic=""),
-        CreateChannelCommand("Channel 2", overwrites={}, type=discord.ChannelType.text, category=category, topic="")
+        CreateCategoryCommand("Test Category", overwrites=None),
+        CreateChannelCommand("Channel 1", overwrites=None, type=discord.ChannelType.text, category=category, topic=""),
+        CreateChannelCommand("Channel 2", overwrites=None, type=discord.ChannelType.text, category=category, topic="")
     ]
 
 def test_create_text_channel_with_overwrites():
@@ -208,7 +208,7 @@ def test_create_text_channel_with_overwrites():
     commands = ChannelSet.diff(blank, channel_set)
 
     assert commands == [
-        CreateCategoryCommand("Test Category", overwrites={}),
+        CreateCategoryCommand("Test Category", overwrites=None),
         CreateChannelCommand("Test Channel", type=discord.ChannelType.text, category=category, topic="", overwrites={role: discord.PermissionOverwrite(read_messages=True)})
     ]
 
@@ -237,8 +237,8 @@ def test_create_voice_channel():
     commands = ChannelSet.diff(blank, channel_set)
 
     assert commands == [
-        CreateCategoryCommand("Test Category", overwrites={}),
-        CreateChannelCommand("Test Voice Channel", overwrites={}, type=discord.ChannelType.voice, category=category)
+        CreateCategoryCommand("Test Category", overwrites=None),
+        CreateChannelCommand("Test Voice Channel", overwrites=None, type=discord.ChannelType.voice, category=category)
     ]
 
 def test_delete_voice_channel():
@@ -330,7 +330,7 @@ def test_category_and_channel_name_collision():
 
     assert commands == [
         DeleteChannelCommand("Test Channel"),
-        CreateCategoryCommand("Test Channel", overwrites={}),
+        CreateCategoryCommand("Test Channel", overwrites=None),
     ]
 
 def test_channel_and_category_name_collision():
@@ -346,5 +346,5 @@ def test_channel_and_category_name_collision():
 
     assert commands == [
         DeleteChannelCommand("Test Category 2"),
-        CreateChannelCommand("Test Category 2", category=category, overwrites={}, type=discord.ChannelType.text),
+        CreateChannelCommand("Test Category 2", category=category, overwrites=None, type=discord.ChannelType.text),
     ]

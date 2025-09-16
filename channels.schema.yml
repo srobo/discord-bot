@@ -71,6 +71,10 @@ $defs:
         examples:
           - off-topic
           - rules
+      old_names:
+        type: array
+        items:
+          type: string
       topic:
         type: string
       channel_type:

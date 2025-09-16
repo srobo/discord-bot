@@ -29,7 +29,7 @@ class ChannelUseCase(StrEnum):
     DISCORD = "discord"
     """Discord system messages. (Raid alerts, community updates, etc.)"""
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass
 class ChannelDefinition:
     name: str
     old_names: list[str] = dataclasses.field(default_factory=list)
@@ -38,34 +38,26 @@ class ChannelDefinition:
     category: "ChannelDefinition | None" = None
     channel_type: ChannelType = ChannelType.text
     use_case: ChannelUseCase | None = None
+    channels: list["ChannelDefinition"] = dataclasses.field(default_factory=list)
 
     @classmethod
-    def load(cls, data: dict, category: "CategoryChannelDefinition|None") -> "ChannelDefinition":
-        return cls(
+    def load(cls, data: dict, category: "ChannelDefinition|None" = None) -> "ChannelDefinition":
+        has_children = "channels" in data
+        default_type = "category" if has_children else "text"
+
+        channel = cls(
             name=data["name"],
             old_names=data.get("old_names", []),
-            overwrites=data.get("permissions"),
+            overwrites=data.get("permissions", {}),
             topic=data.get("topic", ""),
-            category=category if category else None,
-            channel_type=ChannelType[data.get("channel_type", "text")],
+            category=category,
+            channel_type=ChannelType[data.get("channel_type", default_type)],
             use_case=ChannelUseCase(data["use_case"]) if data.get("use_case") else None,
-        )
-
-@dataclasses.dataclass(frozen=True)
-class CategoryChannelDefinition:
-    name: str
-    channels: list[ChannelDefinition]
-    overwrites: Overwrites | None = None
-    old_names: list[str] = dataclasses.field(default_factory=list)
-
-    @classmethod
-    def load(cls, data: dict):
-        category = cls(
-            name=data["name"],
-            overwrites=data.get("permissions"),
-            old_names=data.get("old_names", []),
             channels=[],
         )
-        category_channels = [ChannelDefinition.load(ch_data, category) for ch_data in data.get("channels", [])]
-        object.__setattr__(category, 'channels', category_channels)
-        return category
+
+        if has_children:
+            for child_channel in data["channels"]:
+                channel.channels.append(cls.load(child_channel, category))
+
+        return channel

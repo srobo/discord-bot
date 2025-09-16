@@ -2,7 +2,7 @@ import yamlschema
 from discord import ChannelType
 from yaml import load, Loader
 
-from sr.discord_bot.schema import ChannelDefinition, CategoryChannelDefinition, ChannelUseCase
+from sr.discord_bot.schema import ChannelDefinition, ChannelUseCase
 
 
 def load_data(filename='channels.example.yml') -> list[dict]:
@@ -29,8 +29,7 @@ def test_channel_permissions() -> None:
 
 def test_category_load() -> None:
     data = load_data()
-    definition = CategoryChannelDefinition.load(data[0])
+    definition = ChannelDefinition.load(data[0])
     assert definition is not None
     assert definition.name == 'Information'
     assert len(definition.channels) == 3
-

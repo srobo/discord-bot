@@ -2,7 +2,7 @@ import json
 import asyncio
 import logging
 import os
-from typing import List
+from typing import List, Literal
 
 import discord
 import jsonschema
@@ -14,7 +14,7 @@ from sr.discord_bot.channel import ChannelSet
 from sr.discord_bot.guild import create_guild
 from sr.discord_bot.messages import check_bot_messages
 from sr.discord_bot.rss import check_posts
-from sr.discord_bot.schema import CategoryChannelDefinition
+from sr.discord_bot.schema import ChannelDefinition
 from sr.discord_bot.teams import TeamsData
 from sr.discord_bot.constants import (
     SPECIAL_ROLE,
@@ -51,6 +51,7 @@ from sr.discord_bot.commands.passwd import passwd
 
 class BotClient(discord.Client):
     logger: logging.Logger
+    mode: Literal['run', 'plan', 'apply']
     guild: discord.Guild | discord.Object
     bot_messages: dict[int, list[int]] = {}
     admin_role: discord.Role
@@ -65,6 +66,7 @@ class BotClient(discord.Client):
     feed_channel: discord.TextChannel
     teams_data: TeamsData = TeamsData([])
     subscribed_messages: List[SubscribedMessage]
+    channel_defs: List[ChannelDefinition]
 
     def __init__(
         self,
@@ -74,6 +76,7 @@ class BotClient(discord.Client):
         intents: discord.Intents = discord.Intents.none(),
     ):
         super().__init__(loop=loop, intents=intents)
+        self._load_channel_config()
         self.logger = logger
         self.tree = app_commands.CommandTree(self)
         self._init_commands()
@@ -98,12 +101,22 @@ class BotClient(discord.Client):
         self.tree.add_command(logs)
 
     async def setup_hook(self) -> None:
-        await self.tree.sync()
-        self.check_for_new_blog_posts.start()
+        if self.mode == 'run':
+            await self.tree.sync()
+            self.check_for_new_blog_posts.start()
 
     async def on_ready(self) -> None:
+        if self.mode == 'run':
+            await self.setup_bot()
+        if self.mode == 'plan':
+            await self.list_guilds()
+            await self.close()
+        if self.mode == 'apply':
+            await self.apply_changes()
+            await self.close()
+
+    async def setup_bot(self):
         self.logger.info(f"{self.user} has connected to Discord!")
-        await self.list_guilds()
         guild_id = os.getenv('DISCORD_GUILD_ID')
         if guild_id and guild_id.isnumeric() and (guild := self.get_guild(int(guild_id))):
             self.guild = guild
@@ -240,6 +253,14 @@ To gain access, you must use `/join` with the password for your group.
     async def before_check_for_new_blog_posts(self) -> None:
         await self.wait_until_ready()
 
+    def _load_channel_config(self) -> None:
+        with open('channels.yml', 'r+') as f:
+            contents = yaml.load(f, Loader=yaml.Loader)
+        with open('channels.schema.yml', 'r+') as f:
+            schema = yaml.load(f, Loader=yaml.Loader)
+        jsonschema.validate(contents, schema)
+        self.channel_defs = [ChannelDefinition.load(ch) for ch in contents]
+
     def _load_passwords(self) -> None:
         """
         Returns a mapping from role name to the password for that role.
@@ -301,7 +322,7 @@ To gain access, you must use `/join` with the password for your group.
 
     async def update_subscribed_messages(self) -> None:
         """Update all subscribed messages."""
-        if not self.is_ready():
+        if self.mode != 'run' or not self.is_ready():
             return
 
         self.logger.info('Updating subscribed messages')
@@ -324,20 +345,13 @@ To gain access, you must use `/join` with the password for your group.
                 await self.remove_subscribed_message(sub_msg)
 
     async def list_guilds(self) -> None:
-        with open('channels.yml', 'r+') as f:
-            stored_defs = yaml.load(f, Loader=yaml.Loader)
-        with open('channels.schema.yml', 'r+') as f:
-            schema = yaml.load(f, Loader=yaml.Loader)
-        jsonschema.validate(stored_defs, schema)
-
         self.logger.info("This bot is currently part of the following guilds:")
         for guild in self.guilds:
             self.logger.info(f"- {guild.name} (ID: {guild.id})")
             if os.getenv('DISCORD_GUILD_ID') and str(guild.id) == os.getenv('DISCORD_GUILD_ID'):
                 self.logger.info("  This is the configured guild.")
                 # Output diff
-                definitions = [CategoryChannelDefinition.load(cat) for cat in stored_defs]
-                stored_set = ChannelSet.from_definitions(definitions)
+                stored_set = ChannelSet.from_definitions(self.channel_defs)
                 current_set = ChannelSet.from_guild(guild)
                 diff = ChannelSet.diff(current_set, stored_set)
                 if len(diff) > 0:
@@ -348,3 +362,16 @@ To gain access, you must use `/join` with the password for your group.
                     self.logger.info("  No pending channel changes.")
             self.logger.info(f"  Owner: {guild.owner} (ID: {guild.owner_id})")
             self.logger.info(f"  {guild.member_count} members")
+
+    async def apply_changes(self):
+        guild = discord.utils.get(self.guilds, id=int(os.getenv('DISCORD_GUILD_ID')))
+        stored_set = ChannelSet.from_definitions(self.channel_defs)
+        current_set = ChannelSet.from_guild(guild)
+        diff = ChannelSet.diff(current_set, stored_set)
+        for change in diff:
+            self.logger.info(f"Applying change: {change}")
+            await change.apply(guild)
+            await asyncio.sleep(.5)  # avoid hitting rate limits
+        self.logger.info("Ensuring channels are in order... (This might take a minute)")
+        await stored_set.sort_channels(guild)
+        self.logger.info("Done!")
