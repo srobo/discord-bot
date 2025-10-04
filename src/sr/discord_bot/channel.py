@@ -8,7 +8,7 @@ import discord
 from discord import ChannelType, PermissionOverwrite, Role, Guild, PartialEmoji
 from discord.abc import GuildChannel
 if TYPE_CHECKING:
-    from discord.types.guild import ChannelPositionUpdate
+    from discord.types.guild import ChannelPositionUpdate, GuildFeature
 
 from sr.discord_bot.constants import TEAM_CATEGORY_NAME, TEAM_VOICE_CATEGORY_NAME, WELCOME_CATEGORY_NAME, VERIFIED_ROLE, \
     VOLUNTEER_ROLE, TEAM_LEADER_ROLE, SPECIAL_ROLE
@@ -344,11 +344,13 @@ class AlterChannelCommand(Command):
     # Forum-specific:
     default_reaction_emoji: str | None = None  # Name of the emoji
     available_tags: list[str] = dataclasses.field(default_factory=list)
+    # Bot use only:
+    use_case: ChannelUseCase | None = None
 
     @classmethod
     def diff(cls, old_channel: Channel, new_channel: Channel, new_position: int, channel_type: ChannelType) -> AlterChannelCommand:
         command = cls(old_name=old_channel.name, new_name=new_channel.name,
-                      is_category=new_channel.is_category, channel_type=channel_type)
+                      is_category=new_channel.is_category, channel_type=channel_type, use_case=new_channel.use_case)
         if old_channel.overwrites != new_channel.overwrites:
             command.overwrites = new_channel.overwrites
         if old_channel.topic != new_channel.topic:
@@ -441,9 +443,15 @@ class AlterChannelCommand(Command):
                         new_tags.append(await channel.create_tag(name=tag_name))
                 kwargs["available_tags"] = new_tags
 
-
         if kwargs:
             await channel.edit(**kwargs)
+
+        if self.use_case == ChannelUseCase.RULES and guild.rules_channel != channel:
+            await guild.edit(rules_channel=channel)
+        elif self.use_case == ChannelUseCase.DISCORD and guild.system_channel != channel:
+            await guild.edit(system_channel=channel)
+        elif self.use_case == ChannelUseCase.ANNOUNCE and guild.public_updates_channel != channel:
+            await guild.edit(public_updates_channel=channel)
 
 @dataclasses.dataclass(frozen=True)
 class DeleteChannelCommand(Command):
@@ -510,6 +518,8 @@ class CreateForumCommand(Command):
         return s
 
     async def apply(self, guild: Guild) -> None:
+        if 'COMMUNITY' not in guild.features:
+            await guild.edit(community=True)  # Forums require community servers
         await guild.create_forum(
             name=self.name,
             category=discord.utils.get(guild.categories, name=self.category.name) if self.category else None,
