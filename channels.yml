@@ -17,6 +17,7 @@
           read_messages: true
           send_messages: true
     - name: blog
+      channel_type: news
       topic: Posts from the Student Robotics blog.
       use_case: feed
 

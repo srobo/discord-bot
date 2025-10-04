@@ -60,6 +60,7 @@ $defs:
       - voice
       - forum
       - stage
+      - news
   channel:
     type: object
     required:

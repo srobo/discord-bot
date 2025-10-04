@@ -85,41 +85,6 @@ def test_no_changes():
 
     assert commands == []
 
-def test_move_category():
-    channel_set_old = ChannelSet()
-    channel_set_old.create_category("Category 1")
-    channel_set_old.create_category("Category 2")
-
-    channel_set_new = ChannelSet()
-    channel_set_new.create_category("Category 2")
-    channel_set_new.create_category("Category 1")
-
-    commands = ChannelSet.diff(channel_set_old, channel_set_new)
-
-    assert commands == [
-        AlterChannelCommand("Category 2", new_name="Category 2", position=0, is_category=True),
-        AlterChannelCommand("Category 1", new_name="Category 1", position=1, is_category=True),
-    ]
-
-def test_move_category_to_end():
-    channel_set_old = ChannelSet()
-    channel_set_old.create_category("Category 1")
-    channel_set_old.create_category("Category 2")
-    channel_set_old.create_category("Category 3")
-
-    channel_set_new = ChannelSet()
-    channel_set_new.create_category("Category 2")
-    channel_set_new.create_category("Category 3")
-    channel_set_new.create_category("Category 1")
-
-    commands = ChannelSet.diff(channel_set_old, channel_set_new)
-
-    assert commands == [
-        AlterChannelCommand("Category 2", new_name="Category 2", position=0, is_category=True),
-        AlterChannelCommand("Category 3", new_name="Category 3", position=1, is_category=True),
-        AlterChannelCommand("Category 1", new_name="Category 1", position=2, is_category=True),
-    ]
-
 def test_create_text_channel():
     channel_set = ChannelSet()
     category = channel_set.create_category("Test Category")

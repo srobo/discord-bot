@@ -14,6 +14,7 @@ class RoleType(StrEnum):
 
 Overwrites = dict[RoleType, dict[str, bool]]
 
+
 class ChannelUseCase(StrEnum):
     """Special use cases for Discord channels."""
     RULES = "rules"
@@ -29,6 +30,13 @@ class ChannelUseCase(StrEnum):
     DISCORD = "discord"
     """Discord system messages. (Raid alerts, community updates, etc.)"""
 
+
+@dataclasses.dataclass
+class ForumTagDefinition:
+    name: str
+    emoji: str
+
+
 @dataclasses.dataclass
 class ChannelDefinition:
     name: str
@@ -39,6 +47,9 @@ class ChannelDefinition:
     channel_type: ChannelType = ChannelType.text
     use_case: ChannelUseCase | None = None
     channels: list["ChannelDefinition"] = dataclasses.field(default_factory=list)
+    # Forum-specific:
+    tags: list[ForumTagDefinition] = dataclasses.field(default_factory=list)
+    default_reaction_emoji: str | None = None
 
     @classmethod
     def load(cls, data: dict, category: "ChannelDefinition|None" = None) -> "ChannelDefinition":
@@ -55,6 +66,10 @@ class ChannelDefinition:
             use_case=ChannelUseCase(data["use_case"]) if data.get("use_case") else None,
             channels=[],
         )
+
+        if channel.channel_type == ChannelType.forum:
+            channel.tags = [ForumTagDefinition(**tag) for tag in data.get("tags", [])]
+            channel.default_reaction_emoji = data.get("default_reaction_emoji")
 
         if has_children:
             for child_channel in data["channels"]:
