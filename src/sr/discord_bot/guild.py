@@ -127,7 +127,7 @@ async def send_template_messages(client: "BotClient", guild: Guild):
             messages = await template(client, guild, channel_name)
 
             for index, message in enumerate(messages):
-                if channel.name == BLUESHIRT_ONBOARDING_CHANNEL_NAME and "Step 3" in message:
+                if channel == client.blueshirt_onboarding_channel and "Step 3" in message:
                     result = await post_message(channel, message, view=BlueshirtConfirmView())
                 else:
                     result = await post_message(channel, message)

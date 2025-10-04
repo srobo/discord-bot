@@ -22,9 +22,7 @@ from sr.discord_bot.constants import (
     CHANNEL_PREFIX,
     VOLUNTEER_ROLE,
     TEAM_LEADER_ROLE,
-    FEED_CHANNEL_NAME,
     FEED_CHECK_INTERVAL,
-    ANNOUNCE_CHANNEL_NAME,
     WELCOME_CATEGORY_NAME, BLUESHIRT_ONBOARDING_CHANNEL_NAME, ADMIN_ROLE,
 )
 from sr.discord_bot.commands.join import join

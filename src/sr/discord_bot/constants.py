@@ -3,9 +3,6 @@ from discord import Permissions
 
 WELCOME_CATEGORY_NAME = "Welcome"
 
-# Name of the channel to announce welcome messages to.
-ANNOUNCE_CHANNEL_NAME = "say-hello"
-
 # prefix used to identify the channels to listen to passwords in.
 CHANNEL_PREFIX = "welcome-"
 
@@ -22,15 +19,12 @@ BLUESHIRT_ONBOARDING_CHANNEL_NAME = "blueshirt-onboarding"
 VOLUNTEER_ROLE = "Blueshirt"
 ADMIN_ROLE = "Admin"
 
-PASSWORDS_CHANNEL_NAME = "role-passwords"
-
 TEAM_CATEGORY_NAME = "Team Channels"
 TEAM_CHANNEL_PREFIX = "team-"
 TEAM_VOICE_CATEGORY_NAME = "Team Voice Channels"
 TEAM_LEADER_ROLE = "Team Supervisor"
 
 FEED_URL = "https://studentrobotics.org/feed.xml"
-FEED_CHANNEL_NAME = "blog"
 FEED_CHECK_INTERVAL = 60 * 3  # in seconds
 
 VERIFIED_PERMISSION_MASK = \
