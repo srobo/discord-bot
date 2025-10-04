@@ -216,10 +216,6 @@ To gain access, you must use `/join` with the password for your group.
             # Ignore reactions from the bot itself
             return
 
-        # Grant the volunteer role when the user reacts with a check mark in the blueshirt onboarding channel.
-        if event.channel_id == self.blueshirt_onboarding_channel.id and event.emoji.name == '\N{WHITE HEAVY CHECK MARK}':
-            await event.member.add_roles(self.volunteer_role)
-
         # Remove subscribed messages by reacting with a cross mark.
         if event.emoji.name == '\N{CROSS MARK}':
             if SubscribedMessage(event.channel_id, event.message_id) not in self.subscribed_messages:
