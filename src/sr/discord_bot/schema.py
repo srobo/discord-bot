@@ -1,7 +1,7 @@
 import dataclasses
 from enum import StrEnum
 
-from discord import ChannelType
+from discord import ChannelType, ForumTag, PartialEmoji
 
 
 class RoleType(StrEnum):
@@ -13,7 +13,6 @@ class RoleType(StrEnum):
 
 
 Overwrites = dict[RoleType, dict[str, bool]]
-
 
 class ChannelUseCase(StrEnum):
     """Special use cases for Discord channels."""
@@ -35,6 +34,9 @@ class ChannelUseCase(StrEnum):
 class ForumTagDefinition:
     name: str
     emoji: str
+
+    def to_discord(self) -> ForumTag:
+        return ForumTag(name=self.name, emoji=PartialEmoji.from_str(self.emoji))
 
 
 @dataclasses.dataclass

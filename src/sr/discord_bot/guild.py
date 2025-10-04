@@ -1,15 +1,16 @@
+import asyncio
 import json
 import logging
 import os
 import pathlib
-import webbrowser
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 import discord.enums
-from discord import Guild, TextChannel, PartialEmoji, ForumTag
+from discord import Guild, TextChannel, PartialEmoji
 
-from sr.discord_bot.constants import WELCOME_CATEGORY_NAME, PERMISSIONS, BLUESHIRT_ONBOARDING_CHANNEL_NAME, \
+from sr.discord_bot.channel import ChannelSet
+from sr.discord_bot.constants import PERMISSIONS, BLUESHIRT_ONBOARDING_CHANNEL_NAME, \
     SPECIAL_ROLE, ADMIN_ROLE, VOLUNTEER_ROLE, VERIFIED_ROLE
 from sr.discord_bot.messages import template, post_message
 from sr.discord_bot.ui import BlueshirtConfirmView
@@ -31,46 +32,45 @@ FORUM_TAGS = {
 }
 
 
-async def create_guild(client: "BotClient") -> None:
+async def setup_guild(client: "BotClient") -> None:
     year = datetime.today().year + 1
-    icon = pathlib.Path(os.getenv('SR_DISCORD_ICON') or 'images/icon.png').read_bytes()
+    icon = pathlib.Path(os.getenv('SR_GUILD_ICON') or 'images/icon.png').read_bytes()
     suffix = os.getenv('SR_GUILD_SUFFIX') if 'SR_GUILD_SUFFIX' in os.environ else year
     name=f"Student Robotics {suffix}"
-    logging.info(f"Creating guild with name \"{name}\"")
-    client.guild = await client.create_guild(name=name, icon=icon)
-    logging.info("Guild created with ID " + str(client.guild.id))
-    for channel in client.guild.channels:
-        await channel.delete()
+
     await client.guild.edit(
-        preferred_locale=discord.enums.Locale.british_english,
-        verification_level=discord.enums.VerificationLevel.medium,
+        name=name,
+        icon=icon,
     )
     await upload_emoji(client.guild)
     await create_roles(client, client.guild)
-    rules = await create_channels(client, client.guild)
+    await create_channels(client, client.guild)
     await send_template_messages(client, client.guild)
-    invite = await rules.create_invite()
-    with open(".env", "a", encoding="utf-8") as f:
-        f.write("\nDISCORD_GUILD_ID=" + str(client.guild.id) + "\n")
-    print(f"Invite link: {invite.url}")
-    webbrowser.open(invite.url)
 
 
 async def create_roles(client: "BotClient", guild: Guild) -> None:
     """Create the roles used in the server."""
     logging.info("Creating roles")
     blueshirt_blue = discord.Colour.from_str("#3270ed")
-    client.admin_role = await guild.create_role(name=ADMIN_ROLE, mentionable=True, reason="Role for admins", colour=blueshirt_blue, permissions=PERMISSIONS['admin'])
-    client.volunteer_role = await guild.create_role(name=VOLUNTEER_ROLE, mentionable=True, reason="Role for blueshirts",
-                                                    hoist=True, colour=blueshirt_blue, permissions=PERMISSIONS['blueshirt'])
-    robots = await guild.create_role(name="Robots", mentionable=True, hoist=True, colour=discord.Colour.from_str("#607d8b"))
-    await guild.default_role.edit(mentionable= False, permissions=PERMISSIONS['everyone'])
-    client.supervisor_role = await guild.create_role(name="Team Supervisor", mentionable=False, reason="Role for team supervisors", hoist=True, colour=discord.Colour.from_str("#e74c3c"))
-    await guild.create_role(name="Team Support", mentionable=False, reason="Role for team supervisors", hoist=True, colour=discord.Colour.from_str("#992d22"))
-    client.special_role = await guild.create_role(name=SPECIAL_ROLE, mentionable=False, reason="Role for volunteers")
-    client.verified_role = await guild.create_role(name=VERIFIED_ROLE, mentionable=False, reason="Initial role for verified members", permissions=PERMISSIONS['verified'])
-    me = await guild.fetch_member(client.user.id)
-    await me.add_roles(client.admin_role, robots)
+
+    await guild.default_role.edit(mentionable=False, permissions=PERMISSIONS['everyone'])
+    if discord.utils.get(guild.roles, name=ADMIN_ROLE) is None:
+        client.admin_role = await guild.create_role(name=ADMIN_ROLE, mentionable=True, reason="Role for admins", colour=blueshirt_blue, permissions=PERMISSIONS['admin'])
+    if discord.utils.get(guild.roles, name=VOLUNTEER_ROLE) is None:
+        client.volunteer_role = await guild.create_role(name=VOLUNTEER_ROLE, mentionable=True, reason="Role for blueshirts",
+                                                        hoist=True, colour=blueshirt_blue, permissions=PERMISSIONS['blueshirt'])
+    if discord.utils.get(guild.roles, name="Robots") is None:
+        robots = await guild.create_role(name="Robots", mentionable=True, hoist=True, colour=discord.Colour.from_str("#607d8b"))
+        me = await guild.fetch_member(client.user.id)
+        await me.add_roles(client.admin_role, robots)
+    if discord.utils.get(guild.roles, name="Team Supervisor") is None:
+        client.supervisor_role = await guild.create_role(name="Team Supervisor", mentionable=False, reason="Role for team supervisors", hoist=True, colour=discord.Colour.from_str("#e74c3c"))
+    if discord.utils.get(guild.roles, name="Team Support") is None:
+        await guild.create_role(name="Team Support", mentionable=False, reason="Role for team supervisors", hoist=True, colour=discord.Colour.from_str("#992d22"))
+    if discord.utils.get(guild.roles, name=SPECIAL_ROLE) is None:
+        client.special_role = await guild.create_role(name=SPECIAL_ROLE, mentionable=False, reason="Role for volunteers")
+    if discord.utils.get(guild.roles, name=VERIFIED_ROLE) is None:
+        client.verified_role = await guild.create_role(name=VERIFIED_ROLE, mentionable=False, reason="Initial role for verified members", permissions=PERMISSIONS['verified'])
     logging.info("Roles created")
 
 
@@ -78,8 +78,11 @@ async def upload_emoji(guild: Guild) -> None:
     """Upload the emojis used in the server."""
     logging.info("Uploading emoji")
     emoji_path = pathlib.Path('images/emoji')
+    existing = await guild.fetch_emojis()
     for emoji_file in emoji_path.glob('*'):
         with open(emoji_file, 'rb') as f:
+            if any(e.name == emoji_file.stem for e in existing):
+                continue
             await guild.create_custom_emoji(
                 name=emoji_file.stem,
                 image=f.read(),
@@ -87,77 +90,28 @@ async def upload_emoji(guild: Guild) -> None:
     logging.info("Emoji uploaded")
 
 
-async def create_channels(client: "BotClient", guild: Guild) -> TextChannel:
+async def create_channels(client: "BotClient", guild: Guild) -> None:
     """Create the channels used in the server."""
     logging.info("Creating channels")
-    for channel in await guild.fetch_channels():
-        await channel.delete()
-
-    cat_info = await guild.create_category("Information")
-    rules = await guild.create_text_channel("welcome-and-rules", category=cat_info, overwrites={
-        guild.default_role: discord.PermissionOverwrite(read_messages=True, send_messages=False),
-    })
-    announcements = await guild.create_text_channel("announcements", category=cat_info, overwrites={
-        guild.default_role: discord.PermissionOverwrite(send_messages=False),
-        client.volunteer_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-    })
-    client.feed_channel = await guild.create_text_channel("blog", category=cat_info, topic="Posts from the Student Robotics blog.")
-
-    cat_support = await guild.create_category("Support")
-
-    cat_blueshirt = await guild.create_category("Blueshirt Zone 🐝", overwrites={
-        guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
-        client.volunteer_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-    })
-    await guild.create_text_channel("audit-log", category=cat_blueshirt)
-    client.blueshirt_onboarding_channel = await guild.create_text_channel("blueshirt-onboarding", category=cat_blueshirt, overwrites={
-        client.special_role: discord.PermissionOverwrite(read_messages=True, read_message_history=True),
-    })
-    await guild.create_text_channel("blueshirt-banter", category=cat_blueshirt)
-    await guild.create_text_channel("blueshirt-serious-business", category=cat_blueshirt, topic="A place to discuss what to do with cases on Discord")
-    await guild.create_text_channel("team-stats", category=cat_blueshirt)
-    await guild.create_voice_channel("blueshirt-banter", category=cat_blueshirt)
-
-    cat_social = await guild.create_category("Social")
-    await guild.create_text_channel("general", category=cat_social, topic="General discussion about Student Robotics. Use #support for support queries and #off-topic for other things.")
-    client.announce_channel = await guild.create_text_channel("say-hello", category=cat_social, topic="Hello there!")
-    await guild.create_text_channel("off-topic", category=cat_social, topic="Off-topic tech chat")
-    await guild.create_text_channel("teams-on-the-web", category=cat_social, topic="A place to show off your team blogs and videos")
-
-    cat_team_supervisors = await guild.create_category("Team Supervisors Only", overwrites={
-        guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
-        client.volunteer_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-        client.supervisor_role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-    })
-    await guild.create_text_channel("team-supervisors", category=cat_team_supervisors, topic="Channel for just team supervisors. Competitor-free.")
-
-    await guild.create_category("Team Channels")
-    await guild.create_category("Team Voice Channels")
-
-    cat_admin = await guild.create_category("Admin Zone")
-    await guild.create_text_channel("bot-spam", category=cat_admin)
-    updates = await guild.create_text_channel("community-updates", category=cat_admin, topic="Discord community updates")
-
-    client.welcome_category = await guild.create_category(WELCOME_CATEGORY_NAME)
-
-    await guild.edit(
-        community=True,
-        rules_channel=rules,
-        public_updates_channel=updates,
-        explicit_content_filter=discord.enums.ContentFilter.all_members,
-        system_channel=updates,
-        system_channel_flags=discord.flags.SystemChannelFlags(),
-    )
-    await announcements.edit(type=discord.enums.ChannelType.news)
-    emojis = await guild.fetch_emojis()
-    await cat_support.create_forum(
-        name="support",
-        default_reaction_emoji=discord.utils.get(emojis, name="me2"),
-        available_tags=[ForumTag(name=name, emoji=emoji) for name, emoji in FORUM_TAGS.items()]
-    )
+    diff = ChannelSet.diff(ChannelSet.from_guild(guild), ChannelSet.from_definitions(client.channel_defs))
+    for change in diff:
+        if change.requires_community and "COMMUNITY" not in guild.features:
+            logging.info("Enabling community features...")
+            rules_channel = discord.utils.get(guild.channels, name=client.rules_channel_name)
+            public_updates_channel = discord.utils.get(guild.channels, name=client.discord_announcements_channel_name)
+            await guild.edit(
+                preferred_locale=discord.enums.Locale.british_english,
+                explicit_content_filter=discord.enums.ContentFilter.all_members,
+                verification_level=discord.enums.VerificationLevel.low,
+                community=True,
+                rules_channel=rules_channel,
+                public_updates_channel=public_updates_channel
+            )
+        logging.info(f"Applying change: {change}")
+        await change.apply(guild)
+        await asyncio.sleep(.5)  # avoid hitting rate limits
 
     logging.info("Channels created")
-    return rules
 
 
 async def send_template_messages(client: "BotClient", guild: Guild):

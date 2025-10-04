@@ -2,17 +2,19 @@ from __future__ import annotations
 
 import abc
 import dataclasses
-from typing import Mapping, Any, TYPE_CHECKING
+from typing import Mapping, TYPE_CHECKING
 
 import discord
-from discord import ChannelType, PermissionOverwrite, Role, Guild, PartialEmoji
+from discord import ChannelType, PermissionOverwrite, Role, Guild
 from discord.abc import GuildChannel
+from discord.utils import MISSING
+
 if TYPE_CHECKING:
-    from discord.types.guild import ChannelPositionUpdate, GuildFeature
+    from discord.types.guild import ChannelPositionUpdate
 
 from sr.discord_bot.constants import TEAM_CATEGORY_NAME, TEAM_VOICE_CATEGORY_NAME, WELCOME_CATEGORY_NAME, VERIFIED_ROLE, \
     VOLUNTEER_ROLE, TEAM_LEADER_ROLE, SPECIAL_ROLE
-from sr.discord_bot.schema import ChannelDefinition, Overwrites, RoleType, ChannelUseCase
+from sr.discord_bot.schema import ChannelDefinition, Overwrites, RoleType, ChannelUseCase, ForumTagDefinition
 
 RoleOverwrites = dict[Role, PermissionOverwrite]
 
@@ -21,6 +23,28 @@ IGNORED_CATEGORIES = [
     TEAM_VOICE_CATEGORY_NAME,
     WELCOME_CATEGORY_NAME,
 ]
+
+def match_overwrites(overwrites: Overwrites, guild: Guild) -> RoleOverwrites:
+    role_overwrites: RoleOverwrites = {}
+    for role_type, perms in overwrites.items():
+        if role_type == RoleType.EVERYONE:
+            role = guild.default_role
+        elif role_type == RoleType.VERIFIED:
+            role = discord.utils.get(guild.roles, name=VERIFIED_ROLE)
+        elif role_type == RoleType.BLUESHIRT:
+            role = discord.utils.get(guild.roles, name=VOLUNTEER_ROLE)
+        elif role_type == RoleType.SUPERVISOR:
+            role = discord.utils.get(guild.roles, name=TEAM_LEADER_ROLE)
+        elif role_type == RoleType.UNVERIFIED_BLUESHIRT:
+            role = discord.utils.get(guild.roles, name=SPECIAL_ROLE)
+        else:
+            raise ValueError(f"Unknown role type: {role_type}")
+
+        if role is None:
+            raise ValueError(f"Role for '{role_type}' not found in guild")
+
+        role_overwrites[role] = PermissionOverwrite(**perms)
+    return role_overwrites
 
 class ChannelSet:
     def __init__(self):
@@ -99,6 +123,7 @@ class ChannelSet:
             category=category,
             type=type,
             old_names=old_names or [],
+            use_case=use_case,
         )
 
         self._channels.append(text_channel)
@@ -136,8 +161,8 @@ class ChannelSet:
         default_reaction_emoji: str | None = None,
         available_tags: list[str] | None = None,
     ) -> None:
-        if category and category.type != ChannelType.forum:
-            raise ValueError("The category must be a channel of type 'forum'.")
+        if category and category.type != ChannelType.category:
+            raise ValueError("The category must be a channel of type 'category'.")
         forum_channel = Channel(
             name=name,
             position=position if position is not None else self.count(category),
@@ -176,35 +201,42 @@ class ChannelSet:
 
         seen_old_channel_names = set()
 
+        late_commands: list[ChannelCommand] = []
+
         for new_index, new_channel in enumerate(new):
             old_channel = next((x for x in old if x.name == new_channel.name or x.name in new_channel.old_names), None)
             if old_channel is None:
                 if new_channel.is_category:
-                    commands.append(CreateCategoryCommand(name=new_channel.name, overwrites=new_channel.overwrites))
+                    command = CreateCategoryCommand(name=new_channel.name, overwrites=new_channel.overwrites)
                 elif new_channel.type == ChannelType.forum:
-                    commands.append(CreateForumCommand(
+                    command = CreateForumCommand(
                         name=new_channel.name,
                         category=new_channel.category,
                         overwrites=new_channel.overwrites,
                         topic=new_channel.topic,
-                        default_reaction_emoji=PartialEmoji(name=new_channel.default_reaction_emoji) if new_channel.default_reaction_emoji else None,
-                        available_tags=[{"name": tag_name} for tag_name in new_channel.available_tags],
-                    ))
+                        default_reaction_emoji=new_channel.default_reaction_emoji,
+                        available_tags=new_channel.available_tags,
+                    )
                 else:
-                    commands.append(CreateChannelCommand(
+                    command = CreateChannelCommand(
                         name=new_channel.name,
                         type=new_channel.type,
                         category=new_channel.category,
                         overwrites=new_channel.overwrites,
                         topic=new_channel.topic,
-                    ))
-
-                    # figure out when we have the bare minimum based on use_case ;-;
+                        use_case=new_channel.use_case,
+                    )
+                if command.requires_community:
+                    late_commands.append(command)
+                else:
+                    commands.append(command)
             else:
                 seen_old_channel_names.add(old_channel.name)
                 command = AlterChannelCommand.diff(old_channel, new_channel, new_index, old_channel.type)
                 if command.has_changes():
                     commands.append(command)
+
+        commands.extend(late_commands)
 
         for old_channel in old:
             if old_channel.name not in seen_old_channel_names:
@@ -279,6 +311,15 @@ class ChannelSet:
                         overwrites=channel_definition.overwrites,
                         old_names=channel_definition.old_names,
                     )
+                elif channel_definition.channel_type == ChannelType.forum:
+                    channel_set.create_forum_channel(
+                        name=channel_definition.name,
+                        category=category,
+                        overwrites=channel_definition.overwrites,
+                        old_names=channel_definition.old_names,
+                        default_reaction_emoji=channel_definition.default_reaction_emoji,
+                        available_tags=channel_definition.tags,
+                    )
                 else:
                     channel_set.create_text_channel(
                         name=channel_definition.name,
@@ -311,14 +352,14 @@ class ChannelSet:
 class Channel:
     name: str
     position: int
-    overwrites: RoleOverwrites
+    overwrites: Overwrites
     topic: str
     category: Channel | None
     type: ChannelType
     old_names: list[str] = dataclasses.field(default_factory=list)
     # Forum-specific:
     default_reaction_emoji: str | None = None  # Name of the emoji
-    available_tags: list[str] = dataclasses.field(default_factory=list)
+    available_tags: list[ForumTagDefinition] = dataclasses.field(default_factory=list)
     # Bot use only:
     use_case: ChannelUseCase | None = None
 
@@ -331,11 +372,15 @@ class Command(abc.ABC):
     async def apply(self, guild: Guild) -> None:
         ...
 
+    @property
+    def requires_community(self) -> bool:
+        return False
+
 @dataclasses.dataclass
 class AlterChannelCommand(Command):
     old_name: str
     new_name: str
-    overwrites: RoleOverwrites | None = None
+    overwrites: Overwrites | None = None
     topic: str | None = None
     category: Channel | None = None
     position: int | None = None
@@ -460,7 +505,7 @@ class DeleteChannelCommand(Command):
 
     def __str__(self) -> str:
         type_str = "Category" if self.is_category else "Channel"
-        return f'DELETE #{type_str} "#{self.name}"'
+        return f'DELETE {type_str} "#{self.name}"'
 
     async def apply(self, guild: Guild) -> None:
         await discord.utils.get(guild.channels, name=self.name).delete()
@@ -468,21 +513,23 @@ class DeleteChannelCommand(Command):
 @dataclasses.dataclass(frozen=True)
 class CreateCategoryCommand(Command):
     name: str
-    overwrites: RoleOverwrites | None = None
+    overwrites: Overwrites | None = None
 
     def __str__(self) -> str:
         return f'CREATE Category "{self.name}"'
 
     async def apply(self, guild: Guild) -> None:
-        await guild.create_category(self.name, overwrites=self.overwrites)
+        await guild.create_category(self.name, overwrites=match_overwrites(self.overwrites, guild))
 
 @dataclasses.dataclass(frozen=True)
 class CreateChannelCommand(Command):
     name: str
     type: ChannelType
     category: Channel | None = None
-    overwrites: RoleOverwrites | None = None
+    overwrites: Overwrites | None = None
     topic: str = ""
+    # Bot use only:
+    use_case: ChannelUseCase | None = None
 
     def __str__(self) -> str:
         s =  f'CREATE Channel #{self.name}'
@@ -492,41 +539,63 @@ class CreateChannelCommand(Command):
 
         return s
 
+    @property
+    def requires_community(self) -> bool:
+        return self.type == ChannelType.news
+
     async def apply(self, guild: Guild) -> None:
-        if self.type == ChannelType.text:
-            await guild.create_text_channel(self.name, category=discord.utils.get(guild.categories, name=self.category.name), overwrites=self.overwrites, topic=self.topic)
+        channel_category = discord.utils.get(guild.categories, name=self.category.name)
+        overwrites = match_overwrites(self.overwrites, guild)
+        if self.type == ChannelType.text or self.type == ChannelType.news:
+            channel = await guild.create_text_channel(
+                self.name,
+                category=channel_category,
+                overwrites=overwrites,
+                topic=self.topic,
+                news=self.type == ChannelType.news and 'NEWS' in guild.features,
+            )
         elif self.type == ChannelType.voice:
-            await guild.create_voice_channel(self.name, category=discord.utils.get(guild.categories, name=self.category.name), overwrites=self.overwrites)
+            channel = await guild.create_voice_channel(
+                self.name,
+                category=channel_category,
+                overwrites=overwrites,
+            )
         else:
             raise ValueError(f"Unsupported channel type: {self.type}")
+
+        if self.use_case == ChannelUseCase.RULES:
+            await guild.edit(rules_channel=channel)
+        elif self.use_case == ChannelUseCase.DISCORD:
+            await guild.edit(system_channel=channel)
+        elif self.use_case == ChannelUseCase.ANNOUNCE:
+            await guild.edit(public_updates_channel=channel)
 
 @dataclasses.dataclass(frozen=True)
 class CreateForumCommand(Command):
     name: str
     category: Channel | None = None
-    overwrites: RoleOverwrites | None = None
+    overwrites: Overwrites | None = None
     topic: str = ""
-    default_reaction_emoji: PartialEmoji | None = None
-    available_tags: list[dict[str, Any]] = dataclasses.field(default_factory=list)
+    default_reaction_emoji: str | None = None
+    available_tags: list[ForumTagDefinition] = dataclasses.field(default_factory=list)
 
     def __str__(self) -> str:
-        s =  f'CREATE Forum #{self.name}'
+        return f'CREATE Forum #{self.name}'
 
-        if self.category is not None:
-            s += f' in Category "{self.category.name}"'
-
-        return s
+    @property
+    def requires_community(self) -> bool:
+        return True
 
     async def apply(self, guild: Guild) -> None:
-        if 'COMMUNITY' not in guild.features:
-            await guild.edit(community=True)  # Forums require community servers
+        emojis = await guild.fetch_emojis()
+        default_reaction_emoji = discord.utils.get(emojis, name=self.default_reaction_emoji.strip(':')) if self.default_reaction_emoji else MISSING
         await guild.create_forum(
             name=self.name,
             category=discord.utils.get(guild.categories, name=self.category.name) if self.category else None,
-            overwrites=self.overwrites,
+            overwrites=match_overwrites(self.overwrites, guild),
             topic=self.topic,
-            default_reaction_emoji=self.default_reaction_emoji,
-            available_tags=[discord.ForumTag(**tag) for tag in self.available_tags],
+            default_reaction_emoji=default_reaction_emoji,
+            available_tags=[tag.to_discord() for tag in self.available_tags],
         )
 
 ChannelCommand = AlterChannelCommand | DeleteChannelCommand | CreateCategoryCommand | CreateChannelCommand | CreateForumCommand

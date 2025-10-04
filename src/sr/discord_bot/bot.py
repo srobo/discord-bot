@@ -11,10 +11,10 @@ from discord import app_commands
 from discord.ext import tasks
 
 from sr.discord_bot.channel import ChannelSet
-from sr.discord_bot.guild import create_guild
+from sr.discord_bot.guild import setup_guild
 from sr.discord_bot.messages import check_bot_messages
 from sr.discord_bot.rss import check_posts
-from sr.discord_bot.schema import ChannelDefinition
+from sr.discord_bot.schema import ChannelDefinition, ChannelUseCase
 from sr.discord_bot.teams import TeamsData
 from sr.discord_bot.constants import (
     SPECIAL_ROLE,
@@ -68,6 +68,12 @@ class BotClient(discord.Client):
     subscribed_messages: List[SubscribedMessage]
     channel_defs: List[ChannelDefinition]
 
+    rules_channel_name: str
+    announce_channel_name: str
+    feed_channel_name: str
+    discord_announcements_channel_name: str
+    stats_channel_name: str
+
     def __init__(
         self,
         logger: logging.Logger,
@@ -106,6 +112,8 @@ class BotClient(discord.Client):
             self.check_for_new_blog_posts.start()
 
     async def on_ready(self) -> None:
+        self.logger.info(f"{self.user} has connected to Discord!")
+
         if self.mode == 'run':
             await self.setup_bot()
         if self.mode == 'plan':
@@ -116,12 +124,16 @@ class BotClient(discord.Client):
             await self.close()
 
     async def setup_bot(self):
-        self.logger.info(f"{self.user} has connected to Discord!")
         guild_id = os.getenv('DISCORD_GUILD_ID')
         if guild_id and guild_id.isnumeric() and (guild := self.get_guild(int(guild_id))):
             self.guild = guild
         else:
-            await create_guild(self)
+            self.logger.error("Please create a guild, and set the DISCORD_GUILD_ID environment variable to its ID.")
+            self.logger.error("Then add the bot to the guild using the following link:")
+            self.logger.error("https://discord.com/oauth2/authorize?client_id=" + str(self.user.id))
+            self.logger.error("Once added, restart the bot.")
+            await self.close()
+            return
 
         roles = await self.guild.fetch_roles()
         admin_role = discord.utils.get(roles, name=ADMIN_ROLE)
@@ -130,14 +142,15 @@ class BotClient(discord.Client):
         volunteer_role = discord.utils.get(roles, name=VOLUNTEER_ROLE)
         supervisor_role = discord.utils.get(roles, name=TEAM_LEADER_ROLE)
         welcome_category = discord.utils.get(self.guild.categories, name=WELCOME_CATEGORY_NAME)
-        announce_channel = discord.utils.get(self.guild.text_channels, name=ANNOUNCE_CHANNEL_NAME)
-        feed_channel = discord.utils.get(self.guild.text_channels, name=FEED_CHANNEL_NAME)
+        announce_channel = discord.utils.get(self.guild.text_channels, name=self.announce_channel_name)
+        feed_channel = discord.utils.get(self.guild.text_channels, name=self.feed_channel_name)
         blueshirt_onboarding_channel = discord.utils.get(self.guild.text_channels,
                                                          name=BLUESHIRT_ONBOARDING_CHANNEL_NAME)
 
         if not all([admin_role, verified_role, special_role, volunteer_role, supervisor_role,
                     welcome_category, announce_channel, feed_channel, blueshirt_onboarding_channel]):
-            self.logger.error("Roles and channels are not set up")
+            self.logger.info("Setting up guild...")
+            await setup_guild(self)
         else:
             self.admin_role = admin_role
             self.verified_role = verified_role
@@ -157,14 +170,6 @@ class BotClient(discord.Client):
         name = member.display_name
         self.logger.info(f"Member {name} ({member.id}) joined")
         guild: discord.Guild = member.guild
-
-        # Make the first user to join the server the owner of the server.
-        if guild.owner == guild.me:
-            await member.add_roles(self.volunteer_role, self.admin_role)
-            await member.guild.edit(owner=member)
-            await self.blueshirt_onboarding_channel.send(
-                f"{member.mention} You have been made the server owner. Please set a blueshirt password using `/passwd team:SRZ` and delete this message.")
-            return  # We don't need a welcome channel in this case.
 
         # Create a new channel with that user able to write
         channel: discord.TextChannel = await guild.create_text_channel(
@@ -260,6 +265,20 @@ To gain access, you must use `/join` with the password for your group.
             schema = yaml.load(f, Loader=yaml.Loader)
         jsonschema.validate(contents, schema)
         self.channel_defs = [ChannelDefinition.load(ch) for ch in contents]
+        for top_level in self.channel_defs:
+            if top_level.channel_type == discord.ChannelType.category:
+                for channel in top_level.channels:
+                    if channel.use_case == ChannelUseCase.RULES:
+                        self.rules_channel_name = channel.name
+                    if channel.use_case == ChannelUseCase.ANNOUNCE:
+                        self.announce_channel_name = channel.name
+                    if channel.use_case == ChannelUseCase.FEED:
+                        self.feed_channel_name = channel.name
+                    if channel.use_case == ChannelUseCase.DISCORD:
+                        self.discord_announcements_channel_name = channel.name
+                    if channel.use_case == ChannelUseCase.STATS:
+                        self.stats_channel_name = channel.name
+
 
     def _load_passwords(self) -> None:
         """
@@ -369,6 +388,9 @@ To gain access, you must use `/join` with the password for your group.
         current_set = ChannelSet.from_guild(guild)
         diff = ChannelSet.diff(current_set, stored_set)
         for change in diff:
+            if change.requires_community and "COMMUNITY" not in guild.features:
+                self.logger.info("Enabling community features...")
+                await guild.edit(community=True)
             self.logger.info(f"Applying change: {change}")
             await change.apply(guild)
             await asyncio.sleep(.5)  # avoid hitting rate limits
