@@ -8,18 +8,15 @@ Please disable direct messages for the server, you can do this in the server set
 ## If you're on Desktop:
 **Part 1**
 Right-click on the icon for this server and choose 'Privacy Settings'
----
-TODO: Image here
----
 **Part 2**
 Disable both 'Direct Messages' and 'Activity Joining'
 ---
-TODO: Image here
+![Desktop Privacy Settings](images/onboarding/desktop-privacy-settings.png)
 ---
 ## If you're on Mobile:
 Tap the server name in the header of the sidebar, then disable 'Allow Direct Messages'
 ---
-TODO: Image here
+![Mobile Privacy Settings](images/onboarding/mobile-privacy-settings.png)
 ---
 # Step 2
 Please change your nickname to your preferred personal name (not an online alias). This is under the 'Edit Server Profile' option in the same menu you accessed for Step 1.
