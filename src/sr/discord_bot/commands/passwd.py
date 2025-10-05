@@ -21,10 +21,11 @@ async def passwd(
     new_password: str | None = None,
 ) -> None:
     if tla is None:
-        await interaction.response.send_message(
-            '\n'.join([f"**{team}:** {password}" for team, password in interaction.client.passwords.items()]),
-            ephemeral=True,
-        )
+        passwords = interaction.client.passwords.items()
+        message = "No team passwords set. The password for joining as a blueshirt is set using the TLA `SRZ`."
+        if passwords:
+            message = '\n'.join([f"**{team}:** {password}" for team, password in passwords])
+        await interaction.response.send_message(message, ephemeral=True)
     else:
         if new_password is not None:
             if isinstance(interaction.user, discord.Member) and not interaction.user.guild_permissions.administrator:
