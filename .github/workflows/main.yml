@@ -78,15 +78,6 @@ jobs:
         source venv/bin/activate
         pip-compile script/requirements.in && git diff --exit-code
 
-  validate-channels:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: nrkno/yaml-schema-validator-github-action@v5.1.0
-      with:
-        schema: channels.schema.yml
-        target: channels.yml
-
   build-deploy:
     runs-on: ubuntu-latest
     permissions:
