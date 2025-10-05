@@ -276,15 +276,17 @@ class ChannelSet:
                 old_names=[category.name],
             )
         for channel in guild.channels:
-            category_ignored = channel.category is not None and channel.category.name in IGNORED_CATEGORIES
-            _category: Channel | None = categories[channel.category.id] \
+            category_present = channel.category is not None
+            category_ignored = category_present and (channel.category.name in IGNORED_CATEGORIES
+                                                     if channel.category else False)
+            category_channel: Channel | None = categories[channel.category.id] \
                 if channel.category and channel.category.id in categories else None
             if channel.type == ChannelType.category or category_ignored:
                 continue
             if channel.type == ChannelType.voice:
                 channel_set.create_voice_channel(
                     name=channel.name,
-                    category=_category,
+                    category=category_channel,
                     overwrites=channel_set._get_overwrites(channel),
                     old_names=[channel.name],
                     position=channel.position,
@@ -293,7 +295,7 @@ class ChannelSet:
                 default_reaction = channel.default_reaction_emoji.name if channel.default_reaction_emoji else None
                 channel_set.create_forum_channel(
                     name=channel.name,
-                    category=_category,
+                    category=category_channel,
                     overwrites=channel_set._get_overwrites(channel),
                     old_names=[channel.name],
                     position=channel.position,
@@ -303,7 +305,7 @@ class ChannelSet:
             else:
                 channel_set.create_text_channel(
                     name=channel.name,
-                    category=_category,
+                    category=category_channel,
                     overwrites=channel_set._get_overwrites(channel),
                     topic=channel.topic or "",
                     old_names=[channel.name],
@@ -506,7 +508,7 @@ class AlterChannelCommand(Command):
             if default_reaction_emoji is not None:
                 channel.default_reaction_emoji = default_reaction_emoji._to_partial()
             # Sync tags
-            if self.available_tags and channel is discord.ForumChannel:
+            if self.available_tags and isinstance(channel, discord.ForumChannel):
                 existing_tags = {tag.name: tag for tag in channel.available_tags}
                 new_tags = []
                 for tag_name in self.available_tags:

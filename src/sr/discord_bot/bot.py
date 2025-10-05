@@ -370,7 +370,7 @@ To gain access, you must use `/join` with the password for your group.
             self.logger.info(f"  {guild.member_count} members")
 
     async def apply_changes(self) -> None:
-        if guild_id := os.getenv('DISCORD_GUILD_ID') is None:
+        if (guild_id := os.getenv('DISCORD_GUILD_ID')) is None:
             self.logger.error("No DISCORD_GUILD_ID environment variable set.")
             return
         guild = discord.utils.get(self.guilds, id=int(guild_id))
