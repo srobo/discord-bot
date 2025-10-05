@@ -85,7 +85,7 @@ jobs:
     - uses: nrkno/yaml-schema-validator-github-action@v5.1.0
       with:
         schema: channels.schema.yml
-        target: channels.yaml
+        target: channels.yml
 
   build-deploy:
     runs-on: ubuntu-latest
