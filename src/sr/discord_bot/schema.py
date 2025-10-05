@@ -1,7 +1,8 @@
 import dataclasses
 from enum import StrEnum
+from typing import Any
 
-from discord import ChannelType, ForumTag, PartialEmoji
+from discord import ForumTag, ChannelType, PartialEmoji
 
 
 class RoleType(StrEnum):
@@ -13,6 +14,7 @@ class RoleType(StrEnum):
 
 
 Overwrites = dict[RoleType, dict[str, bool]]
+
 
 class ChannelUseCase(StrEnum):
     """Special use cases for Discord channels."""
@@ -35,6 +37,10 @@ class ForumTagDefinition:
     name: str
     emoji: str
 
+    @classmethod
+    def from_discord(cls, tag: ForumTag) -> "ForumTagDefinition":
+        return cls(name=tag.name, emoji=str(tag.emoji) if tag.emoji else "")
+
     def to_discord(self) -> ForumTag:
         return ForumTag(name=self.name, emoji=PartialEmoji.from_str(self.emoji))
 
@@ -54,7 +60,11 @@ class ChannelDefinition:
     default_reaction_emoji: str | None = None
 
     @classmethod
-    def load(cls, data: dict, category: "ChannelDefinition|None" = None) -> "ChannelDefinition":
+    def load(  # type: ignore[misc] # This gets validated when the YAML is validated against the schema.
+        cls,
+        data: dict[str, Any],
+        category: "ChannelDefinition|None" = None,
+    ) -> "ChannelDefinition":
         has_children = "channels" in data
         default_type = "category" if has_children else "text"
 

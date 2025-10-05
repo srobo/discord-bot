@@ -1,7 +1,7 @@
 from typing import Mapping, TYPE_CHECKING
 
 import discord
-from discord import app_commands
+from discord import Role, app_commands
 
 from sr.discord_bot.commands.ui import TeamDeleteConfirm
 
@@ -30,7 +30,7 @@ group = Team()
 
 
 def permissions(client: "BotClient", team: discord.Role) -> Mapping[
-    discord.Role | discord.Member, discord.PermissionOverwrite,
+    discord.Role | discord.Member | discord.Object, discord.PermissionOverwrite,
 ]:
     if not isinstance(client.guild, discord.Guild):
         return {}
@@ -289,7 +289,8 @@ async def repair_permissions(interaction: discord.interactions.Interaction["BotC
         channel_permissions = permissions(interaction.client, role)
         for channel in channels:
             for channel_role, overwrites in channel_permissions.items():
-                await channel.set_permissions(target=channel_role, overwrite=overwrites)
+                if isinstance(channel_role, Role):
+                    await channel.set_permissions(target=channel_role, overwrite=overwrites)
         await role.edit(mentionable=True)
         await interaction.edit_original_response(content=_repair_permissions_status_msg(index + 1, len(team_roles)))
 

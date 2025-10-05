@@ -5,16 +5,39 @@ import dataclasses
 from typing import Mapping, TYPE_CHECKING
 
 import discord
-from discord import ChannelType, PermissionOverwrite, Role, Guild
+from discord import (
+    Role,
+    Guild,
+    Member,
+    Object,
+    ChannelType,
+    TextChannel,
+    PermissionOverwrite,
+)
 from discord.abc import GuildChannel
 from discord.utils import MISSING
+
+from sr.discord_bot.utils import find_role_by_name, find_channel_by_name
 
 if TYPE_CHECKING:
     from discord.types.guild import ChannelPositionUpdate
 
-from sr.discord_bot.constants import TEAM_CATEGORY_NAME, TEAM_VOICE_CATEGORY_NAME, WELCOME_CATEGORY_NAME, VERIFIED_ROLE, \
-    VOLUNTEER_ROLE, TEAM_LEADER_ROLE, SPECIAL_ROLE
-from sr.discord_bot.schema import ChannelDefinition, Overwrites, RoleType, ChannelUseCase, ForumTagDefinition
+from sr.discord_bot.schema import (
+    RoleType,
+    Overwrites,
+    ChannelUseCase,
+    ChannelDefinition,
+    ForumTagDefinition,
+)
+from sr.discord_bot.constants import (
+    SPECIAL_ROLE,
+    VERIFIED_ROLE,
+    VOLUNTEER_ROLE,
+    TEAM_LEADER_ROLE,
+    TEAM_CATEGORY_NAME,
+    WELCOME_CATEGORY_NAME,
+    TEAM_VOICE_CATEGORY_NAME,
+)
 
 RoleOverwrites = dict[Role, PermissionOverwrite]
 
@@ -24,30 +47,24 @@ IGNORED_CATEGORIES = [
     WELCOME_CATEGORY_NAME,
 ]
 
-def match_overwrites(overwrites: Overwrites, guild: Guild) -> RoleOverwrites:
-    role_overwrites: RoleOverwrites = {}
-    for role_type, perms in overwrites.items():
-        if role_type == RoleType.EVERYONE:
-            role = guild.default_role
-        elif role_type == RoleType.VERIFIED:
-            role = discord.utils.get(guild.roles, name=VERIFIED_ROLE)
-        elif role_type == RoleType.BLUESHIRT:
-            role = discord.utils.get(guild.roles, name=VOLUNTEER_ROLE)
-        elif role_type == RoleType.SUPERVISOR:
-            role = discord.utils.get(guild.roles, name=TEAM_LEADER_ROLE)
-        elif role_type == RoleType.UNVERIFIED_BLUESHIRT:
-            role = discord.utils.get(guild.roles, name=SPECIAL_ROLE)
-        else:
-            raise ValueError(f"Unknown role type: {role_type}")
 
-        if role is None:
-            raise ValueError(f"Role for '{role_type}' not found in guild")
-
-        role_overwrites[role] = PermissionOverwrite(**perms)
+def match_overwrites(overwrites: Overwrites, guild: Guild) -> Mapping[Role | Member | Object, PermissionOverwrite]:
+    role_overwrites: Mapping[Role | Member | Object, PermissionOverwrite] = {
+        guild.default_role: PermissionOverwrite(**overwrites.get(RoleType.EVERYONE, {})),
+        find_role_by_name(guild.roles, VERIFIED_ROLE): PermissionOverwrite(**overwrites.get(RoleType.VERIFIED, {})),
+        find_role_by_name(guild.roles, VOLUNTEER_ROLE): PermissionOverwrite(**overwrites.get(RoleType.BLUESHIRT, {})),
+        find_role_by_name(guild.roles, TEAM_LEADER_ROLE): PermissionOverwrite(
+            **overwrites.get(RoleType.SUPERVISOR, {}),
+        ),
+        find_role_by_name(guild.roles, SPECIAL_ROLE): PermissionOverwrite(
+            **overwrites.get(RoleType.UNVERIFIED_BLUESHIRT, {}),
+        ),
+    }
     return role_overwrites
 
+
 class ChannelSet:
-    def __init__(self):
+    def __init__(self) -> None:
         self._channels: list[Channel] = []
         self._role_map: Mapping[Role, RoleType] | None = None
 
@@ -55,10 +72,10 @@ class ChannelSet:
         if self._role_map is None:
             self._role_map = {
                 guild.default_role: RoleType.EVERYONE,
-                discord.utils.get(guild.roles, name=VERIFIED_ROLE): RoleType.VERIFIED,
-                discord.utils.get(guild.roles, name=VOLUNTEER_ROLE): RoleType.BLUESHIRT,
-                discord.utils.get(guild.roles, name=TEAM_LEADER_ROLE): RoleType.SUPERVISOR,
-                discord.utils.get(guild.roles, name=SPECIAL_ROLE): RoleType.UNVERIFIED_BLUESHIRT,
+                find_role_by_name(guild.roles, VERIFIED_ROLE): RoleType.VERIFIED,
+                find_role_by_name(guild.roles, VOLUNTEER_ROLE): RoleType.BLUESHIRT,
+                find_role_by_name(guild.roles, TEAM_LEADER_ROLE): RoleType.SUPERVISOR,
+                find_role_by_name(guild.roles, SPECIAL_ROLE): RoleType.UNVERIFIED_BLUESHIRT,
             }
 
         if role not in self._role_map:
@@ -67,16 +84,16 @@ class ChannelSet:
         return self._role_map[role]
 
     def _get_overwrites(self, channel: GuildChannel) -> Overwrites:
-        overwrites = {}
+        overwrites: Overwrites = {}
         for subject, permissions in channel.overwrites.items():
             if isinstance(subject, Role):
-                overwrites[self._get_role_type(subject, channel.guild).value] = {}
+                overwrites[self._get_role_type(subject, channel.guild)] = {}
                 for permission, value in permissions:
                     if value is not None:
-                        overwrites[self._get_role_type(subject, channel.guild).value][permission] = value
+                        overwrites[self._get_role_type(subject, channel.guild)][permission] = value
         return overwrites
 
-    def count(self, category: Channel|None) -> int:
+    def count(self, category: Channel | None) -> int:
         """Count the number of channels in a category, or top-level channels if category is None."""
         if category is None:
             return len([c for c in self._channels if c.category is None])
@@ -92,10 +109,10 @@ class ChannelSet:
         category = Channel(
             name=name,
             position=self.count(None),
-            overwrites=overwrites,
+            overwrites=overwrites or {},
             topic="",
             category=None,
-            type=ChannelType.category,
+            channel_type=ChannelType.category,
             old_names=old_names or [],
         )
         self._channels.append(category)
@@ -110,18 +127,18 @@ class ChannelSet:
         topic: str = "",
         old_names: list[str] | None = None,
         position: int | None = None,
-        type: int = ChannelType.text,
+        channel_type: int = ChannelType.text.value,
         use_case: ChannelUseCase | None = None,
     ) -> None:
-        if category and category.type != ChannelType.category:
+        if category and category.channel_type != ChannelType.category:
             raise ValueError("The category must be a channel of type 'category'.")
         text_channel = Channel(
             name=name,
             position=position if position is not None else self.count(category),
-            overwrites=overwrites,
+            overwrites=overwrites or {},
             topic=topic,
             category=category,
-            type=type,
+            channel_type=ChannelType(channel_type),
             old_names=old_names or [],
             use_case=use_case,
         )
@@ -137,15 +154,15 @@ class ChannelSet:
         old_names: list[str] | None = None,
         position: int | None = None,
     ) -> None:
-        if category.type != ChannelType.category:
+        if category is not None and category.channel_type != ChannelType.category:
             raise ValueError("The category must be of type 'category'.")
         voice_channel = Channel(
             name=name,
             position=position if position is not None else self.count(category),
-            overwrites=overwrites,
+            overwrites=overwrites or {},
             topic="",
             category=category,
-            type=ChannelType.voice,
+            channel_type=ChannelType.voice,
             old_names=old_names or [],
         )
         self._channels.append(voice_channel)
@@ -159,17 +176,17 @@ class ChannelSet:
         old_names: list[str] | None = None,
         position: int | None = None,
         default_reaction_emoji: str | None = None,
-        available_tags: list[str] | None = None,
+        available_tags: list[ForumTagDefinition] | None = None,
     ) -> None:
-        if category and category.type != ChannelType.category:
+        if category and category.channel_type != ChannelType.category:
             raise ValueError("The category must be a channel of type 'category'.")
         forum_channel = Channel(
             name=name,
             position=position if position is not None else self.count(category),
-            overwrites=overwrites,
+            overwrites=overwrites or {},
             topic="",
             category=category,
-            type=ChannelType.forum,
+            channel_type=ChannelType.forum,
             old_names=old_names or [],
             default_reaction_emoji=default_reaction_emoji,
             available_tags=available_tags or [],
@@ -179,7 +196,7 @@ class ChannelSet:
     @classmethod
     def diff(cls, old: ChannelSet, new: ChannelSet) -> list[ChannelCommand]:
         """Calculate the difference between two ChannelSets."""
-        commands = []
+        commands: list[ChannelCommand] = []
         # TODO: Diff categories first (in case one gets renamed)
         cls._diff_channels(old._channels, new._channels, commands)
         return commands
@@ -192,7 +209,10 @@ class ChannelSet:
         await self.sort_category(channels, guild)
 
     async def sort_category(self, channels: list[Channel], guild: Guild) -> None:
-        payload: list[ChannelPositionUpdate] = [{'id': await ChannelSet.get_channel_id(c, guild), 'position': c.position } for c in channels]
+        payload: list[ChannelPositionUpdate] = [
+            {'id': await ChannelSet.get_channel_id(c, guild), 'position': c.position}
+            for c in channels
+        ]
         await guild._state.http.bulk_channel_update(guild.id, payload)
 
     @classmethod
@@ -206,9 +226,10 @@ class ChannelSet:
         for new_index, new_channel in enumerate(new):
             old_channel = next((x for x in old if x.name == new_channel.name or x.name in new_channel.old_names), None)
             if old_channel is None:
+                command: ChannelCommand
                 if new_channel.is_category:
                     command = CreateCategoryCommand(name=new_channel.name, overwrites=new_channel.overwrites)
-                elif new_channel.type == ChannelType.forum:
+                elif new_channel.channel_type == ChannelType.forum:
                     command = CreateForumCommand(
                         name=new_channel.name,
                         category=new_channel.category,
@@ -220,7 +241,7 @@ class ChannelSet:
                 else:
                     command = CreateChannelCommand(
                         name=new_channel.name,
-                        type=new_channel.type,
+                        channel_type=new_channel.channel_type,
                         category=new_channel.category,
                         overwrites=new_channel.overwrites,
                         topic=new_channel.topic,
@@ -232,8 +253,8 @@ class ChannelSet:
                     commands.append(command)
             else:
                 seen_old_channel_names.add(old_channel.name)
-                command = AlterChannelCommand.diff(old_channel, new_channel, new_index, old_channel.type)
-                if command.has_changes():
+                command = AlterChannelCommand.diff(old_channel, new_channel, new_index, old_channel.channel_type)
+                if command.has_changes:
                     commands.append(command)
 
         commands.extend(late_commands)
@@ -255,36 +276,39 @@ class ChannelSet:
                 old_names=[category.name],
             )
         for channel in guild.channels:
-            if channel.type == ChannelType.category or channel.category.name in IGNORED_CATEGORIES:
+            category_ignored = channel.category is not None and channel.category.name in IGNORED_CATEGORIES
+            _category: Channel | None = categories[channel.category.id] \
+                if channel.category and channel.category.id in categories else None
+            if channel.type == ChannelType.category or category_ignored:
                 continue
             if channel.type == ChannelType.voice:
                 channel_set.create_voice_channel(
                     name=channel.name,
-                    category=categories[channel.category.id],
+                    category=_category,
                     overwrites=channel_set._get_overwrites(channel),
                     old_names=[channel.name],
                     position=channel.position,
                 )
             elif channel.type == ChannelType.forum:
-                forum_channel = channel  # type: discord.ForumChannel
+                default_reaction = channel.default_reaction_emoji.name if channel.default_reaction_emoji else None
                 channel_set.create_forum_channel(
-                    name=forum_channel.name,
-                    category=categories[forum_channel.category.id] if forum_channel.category else None,
-                    overwrites=channel_set._get_overwrites(forum_channel),
-                    old_names=[forum_channel.name],
-                    position=forum_channel.position,
-                    default_reaction_emoji=forum_channel.default_reaction_emoji.name if forum_channel.default_reaction_emoji else None,
-                    available_tags=[tag.name for tag in forum_channel.available_tags],
+                    name=channel.name,
+                    category=_category,
+                    overwrites=channel_set._get_overwrites(channel),
+                    old_names=[channel.name],
+                    position=channel.position,
+                    default_reaction_emoji=default_reaction,
+                    available_tags=[ForumTagDefinition.from_discord(tag) for tag in channel.available_tags],
                 )
             else:
                 channel_set.create_text_channel(
                     name=channel.name,
-                    category=categories[channel.category.id],
+                    category=_category,
                     overwrites=channel_set._get_overwrites(channel),
                     topic=channel.topic or "",
                     old_names=[channel.name],
                     position=channel.position,
-                    type=channel.type,
+                    channel_type=channel.type.value,
                 )
         return channel_set
 
@@ -327,26 +351,28 @@ class ChannelSet:
                         overwrites=channel_definition.overwrites,
                         topic=channel_definition.topic,
                         old_names=channel_definition.old_names,
-                        type=channel_definition.channel_type,
+                        channel_type=channel_definition.channel_type.value,
                     )
         return channel_set
 
     @staticmethod
     async def get_channel_id(ch: Channel, guild: Guild) -> int:
         await guild.fetch_channels()
-        if ch.type == ChannelType.category:
+        channel: GuildChannel | None
+        if ch.channel_type == ChannelType.category:
             channel = discord.utils.get(guild.categories, name=ch.name)
-        elif ch.type == ChannelType.text:
+        elif ch.channel_type == ChannelType.text:
             channel = discord.utils.get(guild.text_channels, name=ch.name)
-        elif ch.type == ChannelType.voice:
+        elif ch.channel_type == ChannelType.voice:
             channel = discord.utils.get(guild.voice_channels, name=ch.name)
-        elif ch.type == ChannelType.forum:
+        elif ch.channel_type == ChannelType.forum:
             channel = discord.utils.get(guild.forums, name=ch.name)
         else:
             channel = discord.utils.get(guild.channels, name=ch.name)
         if channel is None:
             raise ValueError("Failed to find channel")
         return channel.id
+
 
 @dataclasses.dataclass(frozen=True)
 class Channel:
@@ -355,7 +381,7 @@ class Channel:
     overwrites: Overwrites
     topic: str
     category: Channel | None
-    type: ChannelType
+    channel_type: ChannelType
     old_names: list[str] = dataclasses.field(default_factory=list)
     # Forum-specific:
     default_reaction_emoji: str | None = None  # Name of the emoji
@@ -363,9 +389,17 @@ class Channel:
     # Bot use only:
     use_case: ChannelUseCase | None = None
 
+    def __eq__(self, other: object) -> bool:
+        if other is None:
+            return False
+        if not isinstance(other, Channel):
+            return NotImplemented
+        return self.name == other.name
+
     @property
     def is_category(self) -> bool:
-        return self.type == ChannelType.category
+        return self.channel_type == ChannelType.category
+
 
 class Command(abc.ABC):
     @abc.abstractmethod
@@ -373,8 +407,13 @@ class Command(abc.ABC):
         ...
 
     @property
+    def has_changes(self) -> bool:
+        return True
+
+    @property
     def requires_community(self) -> bool:
         return False
+
 
 @dataclasses.dataclass
 class AlterChannelCommand(Command):
@@ -393,14 +432,16 @@ class AlterChannelCommand(Command):
     use_case: ChannelUseCase | None = None
 
     @classmethod
-    def diff(cls, old_channel: Channel, new_channel: Channel, new_position: int, channel_type: ChannelType) -> AlterChannelCommand:
+    def diff(cls, old_channel: Channel, new_channel: Channel,
+             new_position: int, channel_type: ChannelType) -> AlterChannelCommand:
         command = cls(old_name=old_channel.name, new_name=new_channel.name,
                       is_category=new_channel.is_category, channel_type=channel_type, use_case=new_channel.use_case)
+        changed_category = new_channel.category is not None and old_channel.category != new_channel.category
         if old_channel.overwrites != new_channel.overwrites:
             command.overwrites = new_channel.overwrites
         if old_channel.topic != new_channel.topic:
             command.topic = new_channel.topic
-        if not old_channel.category or (old_channel.category.name != new_channel.category.name):
+        if not old_channel.category or changed_category:
             command.category = new_channel.category
         command.position = new_position
         return command
@@ -411,10 +452,11 @@ class AlterChannelCommand(Command):
 
     def has_attribute_changes(self) -> bool:
         """Check if the command has any changes."""
-        return (self.overwrites is not None or
-                self.topic is not None or
-                self.category is not None)
+        return (self.overwrites is not None
+                or self.topic is not None
+                or self.category is not None)
 
+    @property
     def has_changes(self) -> bool:
         """Check if the command has any changes."""
         return self.is_rename() or self.has_attribute_changes()
@@ -440,26 +482,10 @@ class AlterChannelCommand(Command):
             return f"ALTER  Category \"{self.old_name}\" ({', '.join(changes)})"
         return f"ALTER  Channel #{self.old_name} ({', '.join(changes)})"
 
-    async def get_channel(self, guild: Guild) -> GuildChannel:
-        await guild.fetch_channels()
-        if self.channel_type == ChannelType.category:
-            channel = discord.utils.get(guild.categories, name=self.old_name)
-        elif self.channel_type == ChannelType.text:
-            channel = discord.utils.get(guild.text_channels, name=self.old_name)
-        elif self.channel_type == ChannelType.voice:
-            channel = discord.utils.get(guild.voice_channels, name=self.old_name)
-        elif self.channel_type == ChannelType.forum:
-            channel = discord.utils.get(guild.forums, name=self.old_name)
-        else:
-            channel = discord.utils.get(guild.channels, name=self.old_name)
-        if channel is None:
-            raise ValueError("Failed to find channel")
-        return channel
-
     async def apply(self, guild: Guild) -> None:
         channel = discord.utils.get(guild.channels, name=self.old_name)
         if channel is None:
-            raise "Failed to find channel"
+            raise Exception("Failed to find channel")
 
         kwargs = {}
         if self.is_rename():
@@ -469,14 +495,16 @@ class AlterChannelCommand(Command):
             kwargs["topic"] = self.topic
 
         if self.category is not None:
-            kwargs["category"] = discord.utils.get(guild.channels, name=self.category.name)
+            kwargs["category"] = find_channel_by_name(guild.channels, self.category.name)  # type: ignore
 
-        if self.overwrites is not None:
-            kwargs["overwrites"] = self.overwrites
+        if self.overwrites is not None and self.overwrites != {}:
+            kwargs["overwrites"] = self.overwrites  # type: ignore
 
         if channel.type == ChannelType.forum:
             await guild.fetch_emojis()
-            channel.default_reaction_emoji = discord.utils.get(guild.emojis, name=self.default_reaction_emoji)
+            default_reaction_emoji = discord.utils.get(guild.emojis, name=self.default_reaction_emoji)
+            if default_reaction_emoji is not None:
+                channel.default_reaction_emoji = default_reaction_emoji._to_partial()
             # Sync tags
             if self.available_tags and channel is discord.ForumChannel:
                 existing_tags = {tag.name: tag for tag in channel.available_tags}
@@ -486,17 +514,18 @@ class AlterChannelCommand(Command):
                         new_tags.append(existing_tags[tag_name])
                     else:
                         new_tags.append(await channel.create_tag(name=tag_name))
-                kwargs["available_tags"] = new_tags
+                kwargs["available_tags"] = new_tags  # type: ignore
 
         if kwargs:
             await channel.edit(**kwargs)
+        if isinstance(channel, TextChannel) and self.use_case is not None:
+            if self.use_case == ChannelUseCase.RULES and guild.rules_channel != channel:
+                await guild.edit(rules_channel=channel)
+            elif self.use_case == ChannelUseCase.DISCORD and guild.system_channel != channel:
+                await guild.edit(system_channel=channel)
+            elif self.use_case == ChannelUseCase.ANNOUNCE and guild.public_updates_channel != channel:
+                await guild.edit(public_updates_channel=channel)
 
-        if self.use_case == ChannelUseCase.RULES and guild.rules_channel != channel:
-            await guild.edit(rules_channel=channel)
-        elif self.use_case == ChannelUseCase.DISCORD and guild.system_channel != channel:
-            await guild.edit(system_channel=channel)
-        elif self.use_case == ChannelUseCase.ANNOUNCE and guild.public_updates_channel != channel:
-            await guild.edit(public_updates_channel=channel)
 
 @dataclasses.dataclass(frozen=True)
 class DeleteChannelCommand(Command):
@@ -508,7 +537,10 @@ class DeleteChannelCommand(Command):
         return f'DELETE {type_str} "#{self.name}"'
 
     async def apply(self, guild: Guild) -> None:
-        await discord.utils.get(guild.channels, name=self.name).delete()
+        channel = discord.utils.get(guild.channels, name=self.name)
+        if channel is not None:
+            await channel.delete()
+
 
 @dataclasses.dataclass(frozen=True)
 class CreateCategoryCommand(Command):
@@ -519,12 +551,15 @@ class CreateCategoryCommand(Command):
         return f'CREATE Category "{self.name}"'
 
     async def apply(self, guild: Guild) -> None:
+        if self.overwrites is None:
+            return
         await guild.create_category(self.name, overwrites=match_overwrites(self.overwrites, guild))
+
 
 @dataclasses.dataclass(frozen=True)
 class CreateChannelCommand(Command):
     name: str
-    type: ChannelType
+    channel_type: ChannelType
     category: Channel | None = None
     overwrites: Overwrites | None = None
     topic: str = ""
@@ -532,7 +567,7 @@ class CreateChannelCommand(Command):
     use_case: ChannelUseCase | None = None
 
     def __str__(self) -> str:
-        s =  f'CREATE Channel #{self.name}'
+        s = f'CREATE Channel #{self.name}'
 
         if self.category is not None:
             s += f' in Category "{self.category.name}"'
@@ -541,34 +576,38 @@ class CreateChannelCommand(Command):
 
     @property
     def requires_community(self) -> bool:
-        return self.type == ChannelType.news
+        return self.channel_type == ChannelType.news
 
     async def apply(self, guild: Guild) -> None:
-        channel_category = discord.utils.get(guild.categories, name=self.category.name)
-        overwrites = match_overwrites(self.overwrites, guild)
-        if self.type == ChannelType.text or self.type == ChannelType.news:
+        if self.category is not None:
+            channel_category = discord.utils.get(guild.categories, name=self.category.name)
+        else:
+            channel_category = None
+        overwrites = match_overwrites(self.overwrites or {}, guild)
+        if self.channel_type == ChannelType.text or self.channel_type == ChannelType.news:
             channel = await guild.create_text_channel(
                 self.name,
                 category=channel_category,
                 overwrites=overwrites,
                 topic=self.topic,
-                news=self.type == ChannelType.news and 'NEWS' in guild.features,
+                news=self.channel_type == ChannelType.news and 'NEWS' in guild.features,
             )
-        elif self.type == ChannelType.voice:
-            channel = await guild.create_voice_channel(
+
+            if self.use_case == ChannelUseCase.RULES:
+                await guild.edit(rules_channel=channel)
+            elif self.use_case == ChannelUseCase.DISCORD:
+                await guild.edit(system_channel=channel)
+            elif self.use_case == ChannelUseCase.ANNOUNCE:
+                await guild.edit(public_updates_channel=channel)
+        elif self.channel_type == ChannelType.voice:
+            await guild.create_voice_channel(
                 self.name,
                 category=channel_category,
                 overwrites=overwrites,
             )
         else:
-            raise ValueError(f"Unsupported channel type: {self.type}")
+            raise ValueError(f"Unsupported channel type: {self.channel_type}")
 
-        if self.use_case == ChannelUseCase.RULES:
-            await guild.edit(rules_channel=channel)
-        elif self.use_case == ChannelUseCase.DISCORD:
-            await guild.edit(system_channel=channel)
-        elif self.use_case == ChannelUseCase.ANNOUNCE:
-            await guild.edit(public_updates_channel=channel)
 
 @dataclasses.dataclass(frozen=True)
 class CreateForumCommand(Command):
@@ -588,14 +627,21 @@ class CreateForumCommand(Command):
 
     async def apply(self, guild: Guild) -> None:
         emojis = await guild.fetch_emojis()
-        default_reaction_emoji = discord.utils.get(emojis, name=self.default_reaction_emoji.strip(':')) if self.default_reaction_emoji else MISSING
+        default_reaction_emoji = discord.utils.get(emojis, name=self.default_reaction_emoji.strip(':')) \
+            if self.default_reaction_emoji else MISSING
         await guild.create_forum(
             name=self.name,
             category=discord.utils.get(guild.categories, name=self.category.name) if self.category else None,
-            overwrites=match_overwrites(self.overwrites, guild),
+            overwrites=match_overwrites(self.overwrites or {}, guild),
             topic=self.topic,
             default_reaction_emoji=default_reaction_emoji,
             available_tags=[tag.to_discord() for tag in self.available_tags],
         )
 
-ChannelCommand = AlterChannelCommand | DeleteChannelCommand | CreateCategoryCommand | CreateChannelCommand | CreateForumCommand
+
+ChannelCommand = \
+    AlterChannelCommand | \
+    DeleteChannelCommand | \
+    CreateCategoryCommand | \
+    CreateChannelCommand | \
+    CreateForumCommand

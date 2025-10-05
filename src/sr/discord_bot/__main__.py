@@ -1,7 +1,7 @@
-import argparse
 import os
 import sys
 import logging
+import argparse
 
 from dotenv import load_dotenv
 from discord import Intents

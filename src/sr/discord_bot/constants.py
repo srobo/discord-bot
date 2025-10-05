@@ -44,34 +44,36 @@ VERIFIED_PERMISSION_MASK = \
     Permissions.request_to_speak.flag | \
     Permissions.change_nickname.flag
 
+EVERYONE_PERMISSION_MASK = \
+    Permissions.change_nickname.flag | \
+    Permissions.read_message_history.flag | \
+    Permissions.use_application_commands.flag
+
+BLUESHIRT_PERMISSION_MASK = VERIFIED_PERMISSION_MASK | \
+    Permissions.manage_roles.flag | \
+    Permissions.manage_emojis_and_stickers.flag | \
+    Permissions.view_audit_log.flag | \
+    Permissions.manage_nicknames.flag | \
+    Permissions.mention_everyone.flag | \
+    Permissions.manage_threads.flag | \
+    Permissions.connect.flag | \
+    Permissions.mute_members.flag | \
+    Permissions.deafen_members.flag | \
+    Permissions.move_members.flag | \
+    Permissions.create_events.flag | \
+    Permissions.manage_events.flag
+
+ROBOTS_PERMISSION_MASK = \
+    Permissions.read_messages.flag | \
+    Permissions.read_message_history.flag | \
+    Permissions.manage_roles.flag | \
+    Permissions.use_external_emojis.flag | \
+    Permissions.use_application_commands.flag
+
 PERMISSIONS = {
-    "everyone": Permissions(
-        Permissions.change_nickname.flag |
-        Permissions.read_message_history.flag |
-        Permissions.use_application_commands.flag
-    ),
+    "everyone": Permissions(EVERYONE_PERMISSION_MASK),
     "verified": Permissions(VERIFIED_PERMISSION_MASK),
-    "blueshirt": Permissions(
-        VERIFIED_PERMISSION_MASK |
-        Permissions.manage_roles.flag |
-        Permissions.manage_emojis_and_stickers.flag |
-        Permissions.view_audit_log.flag |
-        Permissions.manage_nicknames.flag |
-        Permissions.mention_everyone.flag |
-        Permissions.manage_threads.flag |
-        Permissions.connect.flag |
-        Permissions.mute_members.flag |
-        Permissions.deafen_members.flag |
-        Permissions.move_members.flag |
-        Permissions.create_events.flag |
-        Permissions.manage_events.flag
-    ),
-    "robots": Permissions(
-        Permissions.read_messages.flag |
-        Permissions.read_message_history.flag |
-        Permissions.manage_roles.flag |
-        Permissions.use_external_emojis.flag |
-        Permissions.use_application_commands.flag
-    ),
+    "blueshirt": Permissions(BLUESHIRT_PERMISSION_MASK),
+    "robots": Permissions(ROBOTS_PERMISSION_MASK),
     "admin": Permissions.elevated(),
 }

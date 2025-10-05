@@ -1,29 +1,32 @@
+import os
 import json
 import asyncio
 import logging
-import os
 from typing import List, Literal
 
+import yaml
 import discord
 import jsonschema
-import yaml
-from discord import app_commands
+from discord import Guild, app_commands
 from discord.ext import tasks
 
-from sr.discord_bot.channel import ChannelSet
-from sr.discord_bot.guild import setup_guild
-from sr.discord_bot.messages import check_bot_messages
 from sr.discord_bot.rss import check_posts
-from sr.discord_bot.schema import ChannelDefinition, ChannelUseCase
+from sr.discord_bot.guild import setup_guild
 from sr.discord_bot.teams import TeamsData
+from sr.discord_bot.utils import find_role_by_name, find_channel_by_name
+from sr.discord_bot.schema import ChannelUseCase, ChannelDefinition
+from sr.discord_bot.channel import ChannelSet
+from sr.discord_bot.messages import check_bot_messages
 from sr.discord_bot.constants import (
+    ADMIN_ROLE,
     SPECIAL_ROLE,
     VERIFIED_ROLE,
     CHANNEL_PREFIX,
     VOLUNTEER_ROLE,
     TEAM_LEADER_ROLE,
     FEED_CHECK_INTERVAL,
-    WELCOME_CATEGORY_NAME, BLUESHIRT_ONBOARDING_CHANNEL_NAME, ADMIN_ROLE,
+    WELCOME_CATEGORY_NAME,
+    BLUESHIRT_ONBOARDING_CHANNEL_NAME,
 )
 from sr.discord_bot.commands.join import join
 from sr.discord_bot.commands.logs import logs
@@ -121,44 +124,38 @@ class BotClient(discord.Client):
             await self.apply_changes()
             await self.close()
 
-    async def setup_bot(self):
+    async def _set_roles_and_channels(self, guild: Guild) -> None:
+        roles = await guild.fetch_roles()
+        self.admin_role = find_role_by_name(roles, ADMIN_ROLE)
+        self.verified_role = find_role_by_name(roles, VERIFIED_ROLE)
+        self.special_role = find_role_by_name(roles, SPECIAL_ROLE)
+        self.volunteer_role = find_role_by_name(roles, VOLUNTEER_ROLE)
+        self.supervisor_role = find_role_by_name(roles, TEAM_LEADER_ROLE)
+        self.welcome_category = find_channel_by_name(guild.categories, WELCOME_CATEGORY_NAME)
+        self.announce_channel = find_channel_by_name(guild.text_channels, self.announce_channel_name)
+        self.feed_channel = find_channel_by_name(guild.text_channels, self.feed_channel_name)
+        self.blueshirt_onboarding_channel = find_channel_by_name(guild.text_channels,
+                                                                 BLUESHIRT_ONBOARDING_CHANNEL_NAME)
+
+    async def setup_bot(self) -> None:
         guild_id = os.getenv('DISCORD_GUILD_ID')
         if guild_id and guild_id.isnumeric() and (guild := self.get_guild(int(guild_id))):
             self.guild = guild
         else:
             self.logger.error("Please create a guild, and set the DISCORD_GUILD_ID environment variable to its ID.")
-            self.logger.error("Then add the bot to the guild using the following link:")
-            self.logger.error("https://discord.com/oauth2/authorize?client_id=" + str(self.user.id))
-            self.logger.error("Once added, restart the bot.")
+            if self.user is not None:
+                self.logger.error("Then add the bot to the guild using the following link:")
+                self.logger.error("https://discord.com/oauth2/authorize?client_id=" + str(self.user.id))
+                self.logger.error("Once added, restart the bot.")
             await self.close()
             return
 
-        roles = await self.guild.fetch_roles()
-        admin_role = discord.utils.get(roles, name=ADMIN_ROLE)
-        verified_role = discord.utils.get(roles, name=VERIFIED_ROLE)
-        special_role = discord.utils.get(roles, name=SPECIAL_ROLE)
-        volunteer_role = discord.utils.get(roles, name=VOLUNTEER_ROLE)
-        supervisor_role = discord.utils.get(roles, name=TEAM_LEADER_ROLE)
-        welcome_category = discord.utils.get(self.guild.categories, name=WELCOME_CATEGORY_NAME)
-        announce_channel = discord.utils.get(self.guild.text_channels, name=self.announce_channel_name)
-        feed_channel = discord.utils.get(self.guild.text_channels, name=self.feed_channel_name)
-        blueshirt_onboarding_channel = discord.utils.get(self.guild.text_channels,
-                                                         name=BLUESHIRT_ONBOARDING_CHANNEL_NAME)
-
-        if not all([admin_role, verified_role, special_role, volunteer_role, supervisor_role,
-                    welcome_category, announce_channel, feed_channel, blueshirt_onboarding_channel]):
+        try:
+            await self._set_roles_and_channels(guild)
+        except ValueError:
             self.logger.info("Setting up guild...")
             await setup_guild(self)
-        else:
-            self.admin_role = admin_role
-            self.verified_role = verified_role
-            self.special_role = special_role
-            self.volunteer_role = volunteer_role
-            self.supervisor_role = supervisor_role
-            self.welcome_category = welcome_category
-            self.announce_channel = announce_channel
-            self.feed_channel = feed_channel
-            self.blueshirt_onboarding_channel = blueshirt_onboarding_channel
+            await self._set_roles_and_channels(guild)
 
         await check_bot_messages(self, self.guild)
         self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
@@ -212,17 +209,14 @@ To gain access, you must use `/join` with the password for your group.
 
     async def on_raw_reaction_add(self, event: discord.RawReactionActionEvent) -> None:
         """Handle message reactions."""
-        if event.member.id == self.user.id:
-            # Ignore reactions from the bot itself
+        if event.member is None or self.user is not None and event.member.id == self.user.id:
+            # Ignore reactions from the bot itself and users not in the server
             return
 
         # Remove subscribed messages by reacting with a cross mark.
         if event.emoji.name == '\N{CROSS MARK}':
             if SubscribedMessage(event.channel_id, event.message_id) not in self.subscribed_messages:
                 # Ignore for messages not in the subscribed list
-                return
-            if event.member is None:
-                # Ignore for users not in the server
                 return
             if self.volunteer_role not in event.member.roles:
                 # Ignore for users without admin privileges
@@ -272,7 +266,6 @@ To gain access, you must use `/join` with the password for your group.
                         self.discord_announcements_channel_name = channel.name
                     if channel.use_case == ChannelUseCase.STATS:
                         self.stats_channel_name = channel.name
-
 
     def _load_passwords(self) -> None:
         """
@@ -376,8 +369,14 @@ To gain access, you must use `/join` with the password for your group.
             self.logger.info(f"  Owner: {guild.owner} (ID: {guild.owner_id})")
             self.logger.info(f"  {guild.member_count} members")
 
-    async def apply_changes(self):
-        guild = discord.utils.get(self.guilds, id=int(os.getenv('DISCORD_GUILD_ID')))
+    async def apply_changes(self) -> None:
+        if guild_id := os.getenv('DISCORD_GUILD_ID') is None:
+            self.logger.error("No DISCORD_GUILD_ID environment variable set.")
+            return
+        guild = discord.utils.get(self.guilds, id=int(guild_id))
+        if guild is None:
+            self.logger.error("No guild found with the configured DISCORD_GUILD_ID.")
+            return
         stored_set = ChannelSet.from_definitions(self.channel_defs)
         current_set = ChannelSet.from_guild(guild)
         diff = ChannelSet.diff(current_set, stored_set)

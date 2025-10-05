@@ -1,9 +1,10 @@
 import json
-from pathlib import Path
 from string import Template
 from typing import TYPE_CHECKING
+from pathlib import Path
 
-from discord import File, TextChannel, Guild, Emoji, Message
+from discord import File, Emoji, Guild, Message, TextChannel
+from discord.ui import View
 from discord.utils import get
 
 from sr.discord_bot.ui import BlueshirtConfirmView
@@ -31,6 +32,8 @@ async def check_bot_messages(client: "BotClient", guild: Guild) -> None:
 
     for channel_id, message_ids in client.bot_messages.items():
         channel = guild.get_channel(int(channel_id))
+        if channel is None or not isinstance(channel, TextChannel):
+            continue
         new_contents = await template(client, guild, channel.name)
         max_seen_index = -1
 
@@ -42,9 +45,10 @@ async def check_bot_messages(client: "BotClient", guild: Guild) -> None:
                     if existing_message.content != new_contents[index].strip():
                         await existing_message.edit(content=new_contents[index].strip())
                     for component in existing_message.components:
-                        if any([child.custom_id == "blueshirt-confirm" for child in component.children]):
-                            client.add_view(BlueshirtConfirmView(), message_id=existing_message.id)
-                            print(f"Subscribed to events from message {existing_message.id}")
+                        if hasattr(component, 'children'):
+                            if any(child.custom_id == "blueshirt-confirm" for child in component.children):
+                                client.add_view(BlueshirtConfirmView(), message_id=existing_message.id)
+                                print(f"Subscribed to events from message {existing_message.id}")
             except Exception as e:
                 print(f"Error retrieving message {message_id} in {channel.name}: {e}")
 
@@ -52,14 +56,15 @@ async def check_bot_messages(client: "BotClient", guild: Guild) -> None:
             if index <= max_seen_index:
                 continue
             sent = await post_message(channel, new_contents[index])
-            client.bot_messages[channel_id].append(sent.id)
+            messages = client.bot_messages[channel_id]
+            if sent and messages is not None:
+                messages.append(sent.id)
 
     with open("bot_messages.json", "w", encoding="utf-8") as f:
         json.dump(client.bot_messages, f)
 
 
-
-def channel_mention(guild: Guild, match: re.Match) -> str:
+def channel_mention(guild: Guild, match: re.Match[str]) -> str:
     """Get a channel by its name in the given guild."""
     groups = match.groupdict()
     if "name" in groups:
@@ -72,7 +77,7 @@ async def template(
     client: "BotClient",
     guild: Guild,
     template_name: str,
-    **kwargs,
+    **kwargs: str,
 ) -> list[str]:
     kwargs = get_default_args(client, guild) | kwargs
     if template_name not in templates:
@@ -102,14 +107,16 @@ async def template(
 
 def get_default_args(client: "BotClient", guild: Guild) -> dict[str, str]:
     """Get the default arguments for the templates."""
-    return {
-        "bot": client.user.mention,
+    args = {
         "y": guild.name[-4:],
         "blueshirt": client.volunteer_role.mention,
     }
+    if client.user is not None:
+        args["bot"] = client.user.mention
+    return args
 
 
-async def post_message(channel: TextChannel, message: str, **kwargs) -> Message | None:
+async def post_message(channel: TextChannel, message: str, view: View | None = None) -> Message | None:
     """Post a message to a channel."""
     # Check if the message contains an image
     message = message.strip()
@@ -121,9 +128,11 @@ async def post_message(channel: TextChannel, message: str, **kwargs) -> Message 
             file=File(
                 path,
                 filename=path.name,
-                description=image.group("alt")
+                description=image.group("alt"),
             ),
         )
     elif message != "":
-        return await channel.send(message, suppress_embeds=True, **kwargs)
+        if view is not None:
+            return await channel.send(message, view=view, suppress_embeds=True)
+        return await channel.send(message, suppress_embeds=True)
     return None
