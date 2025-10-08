@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import argparse
 
 import sentry_sdk
 from dotenv import load_dotenv
@@ -21,12 +22,23 @@ sentry_sdk.init(
 intents = Intents.default()
 intents.members = True  # Listen to member joins
 
-if __name__ == "__main__":
-    load_dotenv()
-    token = os.getenv("DISCORD_TOKEN")
-    if token is None:
-        print("No token provided.", file=sys.stderr)
-        exit(1)
+load_dotenv()
+token = os.getenv("DISCORD_TOKEN")
+if token is None:
+    print("No token provided.", file=sys.stderr)
+    exit(1)
 
-    bot = BotClient(logger=logger, intents=intents)
-    bot.run(token)
+parser = argparse.ArgumentParser(description="Student Robotics Discord Bot")
+subcommands = parser.add_subparsers(dest="command")
+parser_run = subcommands.add_parser("run", help="Run the Discord bot")
+parser_plan = subcommands.add_parser("plan", help="List pending guild changes")
+parser_apply = subcommands.add_parser("apply", help="Apply pending guild changes")
+args = parser.parse_args()
+
+if args.command is None:
+    parser.print_help()
+    exit(1)
+
+bot = BotClient(logger=logger, intents=intents)
+bot.mode = args.command
+bot.run(token)

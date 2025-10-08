@@ -11,6 +11,8 @@ flake8-tuple
 # Type checking
 mypy
 types-beautifulsoup4
+types-PyYAML
+types-jsonschema
 
 # Requirements management
 pip-tools

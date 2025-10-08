@@ -1,0 +1,116 @@
+# When renaming channels, you must set an `old_names` attribute in the channel definition
+# listing the previous names of the channel.
+- name: Information
+  channels:
+    - name: welcome-and-rules
+      use_case: rules
+      permissions:
+        everyone:
+          read_messages: true
+          send_messages: false
+    - name: announcements
+      use_case: announce
+      permissions:
+        everyone:
+          send_messages: false
+        blueshirt:
+          read_messages: true
+          send_messages: true
+    - name: blog
+      channel_type: news
+      topic: Posts from the Student Robotics blog.
+      use_case: feed
+
+- name: Support
+  channels:
+    - name: support
+      channel_type: forum
+      tags:
+        - name: Rules
+          emoji: 📜
+        - name: Kit
+          emoji: 🧰
+        - name: Programming
+          emoji: 👩‍💻
+        - name: Simulator
+          emoji: 🐞
+        - name: Competition
+          emoji: 🏆
+        - name: Challenges
+          emoji: 🏅
+        - name: Microgames
+          emoji: 🔬
+        - name: Other
+          emoji: ❓
+        - name: Resolved
+          emoji: ✅
+      default_reaction_emoji: ":me2:"
+
+- name: Blueshirt Zone 🐝
+  permissions:
+    everyone:
+      read_messages: false
+      send_messages: false
+    blueshirt:
+      read_messages: true
+      send_messages: true
+  channels:
+    - name: audit-log
+      use_case: audit
+    - name: blueshirt-onboarding
+      permissions:
+        unverified_blueshirt:
+          read_messages: true
+          read_message_history: true
+    - name: blueshirt-banter
+    - name: blueshirt-serious-business
+      topic: A place to discuss what to do with cases on Discord
+    - name: team-stats
+      use_case: stats
+    - name: blueshirt-banter
+      channel_type: voice
+
+- name: Social
+  channels:
+    - name: general
+      topic: "General discussion about Student Robotics. Use #support for support queries and #off-topic for other things."
+    - name: say-hello
+      topic: Hello there!
+    - name: off-topic
+      topic: Off-topic tech chat
+    - name: teams-on-the-web
+      topic: A place to show off your team blogs and videos
+
+- name: Team Supervisors Only
+  channels:
+    - name: team-supervisors
+      topic: Channel for just team supervisors. Competitor-free.
+  permissions:
+    everyone:
+      read_messages: false
+      send_messages: false
+    blueshirt:
+      read_messages: true
+      send_messages: true
+    supervisor:
+      read_messages: true
+      send_messages: true
+
+# Do not change the two categories below. They are populated with /team commands.
+# The name is used to identify the category, if changed, it must also update in constants.py
+- name: Team Channels
+  channels: [ ]
+
+- name: Team Voice Channels
+  channels: [ ]
+
+- name: Admin Zone
+  channels:
+    - name: bot-spam
+    - name: community-updates
+      topic: Discord community updates
+      use_case: discord
+
+# Do not change the category below. It is populated automatically when users join.
+- name: Welcome
+  channels: [ ]
