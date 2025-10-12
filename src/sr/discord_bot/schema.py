@@ -1,10 +1,11 @@
-import dataclasses
 import sys
+import dataclasses
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
     from backports.strenum import StrEnum
+
 from typing import Any
 
 from discord import ForumTag, ChannelType, PartialEmoji
