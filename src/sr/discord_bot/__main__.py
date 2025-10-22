@@ -9,6 +9,7 @@ from discord import Intents
 
 from sr.discord_bot.bot import BotClient
 
+load_dotenv()
 logger = logging.getLogger("srbot")
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
@@ -22,7 +23,6 @@ sentry_sdk.init(
 intents = Intents.default()
 intents.members = True  # Listen to member joins
 
-load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
 if token is None:
     print("No token provided.", file=sys.stderr)
