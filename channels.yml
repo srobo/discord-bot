@@ -9,6 +9,7 @@
           read_messages: true
           send_messages: false
     - name: announcements
+      channel_type: news
       permissions:
         everyone:
           send_messages: false
