@@ -202,10 +202,12 @@ To gain access, you must use `/join` with the password for your group.
 
     async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
         """Update subscribed messages when a member's roles change."""
-        if isinstance(self.guild, discord.Guild):
+        if hasattr(self, 'guild') and hasattr(self, 'supervisor_role'):
             self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
 
             await self.update_subscribed_messages()
+        else:
+            self.logger.debug('Not initialized yet, ignoring on_member_update...')
 
     async def on_raw_reaction_add(self, event: discord.RawReactionActionEvent) -> None:
         """Handle message reactions."""
