@@ -183,7 +183,7 @@ class BotClient(discord.Client):
             f"""Welcome {member.mention}!
 To gain access, you must use `/join` with the password for your group.
 
-*Don't have the password? it should have been sent with this join link to your team leader*""",
+*Don't have the password? it should have been sent with this join link to your team supervisor*""",
         )
         self.logger.info(f"Created welcome channel for '{name}'")
 
