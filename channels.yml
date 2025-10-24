@@ -9,7 +9,7 @@
           read_messages: true
           send_messages: false
     - name: announcements
-      use_case: announce
+      channel_type: news
       permissions:
         everyone:
           send_messages: false
@@ -75,6 +75,7 @@
     - name: general
       topic: "General discussion about Student Robotics. Use #support for support queries and #off-topic for other things."
     - name: say-hello
+      use_case: announce
       topic: Hello there!
     - name: off-topic
       topic: Off-topic tech chat

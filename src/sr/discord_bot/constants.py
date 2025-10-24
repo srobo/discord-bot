@@ -1,6 +1,6 @@
-# name of the category for new welcome channels to go.
 from discord import Permissions
 
+# name of the category for new welcome channels to go.
 WELCOME_CATEGORY_NAME = "Welcome"
 
 # prefix used to identify the channels to listen to passwords in.
@@ -28,7 +28,6 @@ FEED_URL = "https://studentrobotics.org/feed.xml"
 FEED_CHECK_INTERVAL = 60 * 3  # in seconds
 
 VERIFIED_PERMISSION_MASK = \
-    Permissions.read_messages.flag | \
     Permissions.send_messages.flag | \
     Permissions.send_messages_in_threads.flag | \
     Permissions.create_public_threads.flag | \

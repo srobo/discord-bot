@@ -7,7 +7,7 @@ from typing import List, Literal
 import yaml
 import discord
 import jsonschema
-from discord import Guild, app_commands
+from discord import Guild, app_commands, CategoryChannel
 from discord.ext import tasks
 
 from sr.discord_bot.rss import check_posts
@@ -160,8 +160,12 @@ class BotClient(discord.Client):
         await check_bot_messages(self, self.guild)
         self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
         await self.update_subscribed_messages()
+        await self._create_missing_welcome_channels()
 
     async def on_member_join(self, member: discord.Member) -> None:
+        if self.mode != 'run':
+            return
+
         name = member.display_name
         self.logger.info(f"Member {name} ({member.id}) joined")
         guild: discord.Guild = member.guild
@@ -188,6 +192,9 @@ To gain access, you must use `/join` with the password for your group.
         self.logger.info(f"Created welcome channel for '{name}'")
 
     async def on_member_remove(self, member: discord.Member) -> None:
+        if self.mode != 'run':
+            return
+
         name = member.display_name
         self.logger.info(f"Member '{name}' left")
 
@@ -202,10 +209,15 @@ To gain access, you must use `/join` with the password for your group.
 
     async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
         """Update subscribed messages when a member's roles change."""
-        if isinstance(self.guild, discord.Guild):
+        if self.mode != 'run':
+            return
+
+        if hasattr(self, 'guild') and isinstance(self.guild, Guild) and hasattr(self, 'supervisor_role'):
             self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
 
             await self.update_subscribed_messages()
+        else:
+            self.logger.debug('Not initialized yet, ignoring on_member_update...')
 
     async def on_raw_reaction_add(self, event: discord.RawReactionActionEvent) -> None:
         """Handle message reactions."""
@@ -390,3 +402,23 @@ To gain access, you must use `/join` with the password for your group.
         self.logger.info("Ensuring channels are in order... (This might take a minute)")
         await stored_set.sort_channels(guild)
         self.logger.info("Done!")
+
+    async def _create_missing_welcome_channels(self) -> None:
+        if not isinstance(self.guild, Guild):
+            return
+
+        async for guild_member in self.guild.fetch_members():
+            if len(guild_member.roles) == 0:
+                welcome_channel_found = False
+
+                for welcome_channel in self.welcome_category.channels:
+                    if isinstance(welcome_channel, CategoryChannel):
+                        # Categories can't contain categories so this shouldn't happen
+                        # However channels is a list of GuildChannel so we need to handle it
+                        continue
+
+                    if guild_member in welcome_channel.members:
+                        welcome_channel_found = True
+
+                if not welcome_channel_found:
+                    await self.on_member_join(guild_member)
