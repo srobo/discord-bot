@@ -27,6 +27,7 @@ async def passwd(
             message = '\n'.join([f"**{team}:** {password}" for team, password in passwords])
         await interaction.response.send_message(message, ephemeral=True)
     else:
+        tla = tla.upper()
         if new_password is not None:
             if isinstance(interaction.user, discord.Member) and not interaction.user.guild_permissions.administrator:
                 await interaction.response.send_message(
@@ -35,7 +36,7 @@ async def passwd(
                 )
                 return
             interaction.client.set_password(tla, new_password)
-            await interaction.response.send_message(f"The password for {tla.upper()} has been changed.", ephemeral=True)
+            await interaction.response.send_message(f"The password for {tla} has been changed.", ephemeral=True)
         else:
             password = interaction.client.passwords[tla]
-            await interaction.response.send_message(f"The password for {tla.upper()} is `{password}`", ephemeral=True)
+            await interaction.response.send_message(f"The password for {tla} is `{password}`", ephemeral=True)
