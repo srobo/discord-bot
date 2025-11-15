@@ -75,7 +75,6 @@ async def join(interaction: discord.Interaction["BotClient"], password: str) -> 
             )
             interaction.client.logger.info(f"Sent welcome announcement for '{member.name}'")
 
-        await interaction.response.defer()
         await channel.delete()
         interaction.client.logger.info(
             f"deleted channel '{channel.name}' because verification has completed.",
