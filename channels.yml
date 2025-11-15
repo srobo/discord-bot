@@ -1,6 +1,9 @@
 # When renaming channels, you must set an `old_names` attribute in the channel definition
 # listing the previous names of the channel.
 - name: Information
+  permissions:
+    verified:
+      read_messages: true
   channels:
     - name: welcome-and-rules
       use_case: rules
@@ -22,6 +25,9 @@
       use_case: feed
 
 - name: Support
+  permissions:
+    verified:
+      read_messages: true
   channels:
     - name: support
       channel_type: forum
@@ -51,6 +57,9 @@
     everyone:
       read_messages: false
       send_messages: false
+    verified:
+      read_messages: false
+      send_messages: false
     blueshirt:
       read_messages: true
       send_messages: true
@@ -71,6 +80,9 @@
       channel_type: voice
 
 - name: Social
+  permissions:
+    verified:
+      read_messages: true
   channels:
     - name: general
       topic: "General discussion about Student Robotics. Use #support for support queries and #off-topic for other things."
@@ -90,6 +102,9 @@
     everyone:
       read_messages: false
       send_messages: false
+    verified:
+      read_messages: false
+      send_messages: false
     blueshirt:
       read_messages: true
       send_messages: true
@@ -106,6 +121,9 @@
   channels: [ ]
 
 - name: Admin Zone
+  permissions:
+    everyone:
+      read_messages: false
   channels:
     - name: bot-spam
     - name: community-updates
