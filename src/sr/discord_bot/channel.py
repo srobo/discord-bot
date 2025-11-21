@@ -49,18 +49,13 @@ IGNORED_CATEGORIES = [
 
 
 def match_overwrites(overwrites: Overwrites, guild: Guild) -> Mapping[Role | Member | Object, PermissionOverwrite]:
-    role_overwrites: Mapping[Role | Member | Object, PermissionOverwrite] = {
-        guild.default_role: PermissionOverwrite(**overwrites.get(RoleType.EVERYONE, {})),
-        find_role_by_name(guild.roles, VERIFIED_ROLE): PermissionOverwrite(**overwrites.get(RoleType.VERIFIED, {})),
-        find_role_by_name(guild.roles, VOLUNTEER_ROLE): PermissionOverwrite(**overwrites.get(RoleType.BLUESHIRT, {})),
-        find_role_by_name(guild.roles, TEAM_LEADER_ROLE): PermissionOverwrite(
-            **overwrites.get(RoleType.SUPERVISOR, {}),
-        ),
-        find_role_by_name(guild.roles, SPECIAL_ROLE): PermissionOverwrite(
-            **overwrites.get(RoleType.UNVERIFIED_BLUESHIRT, {}),
-        ),
+    return {
+        guild.default_role: overwrites.get(RoleType.EVERYONE, PermissionOverwrite()),
+        find_role_by_name(guild.roles, VERIFIED_ROLE): overwrites.get(RoleType.VERIFIED, PermissionOverwrite()),
+        find_role_by_name(guild.roles, VOLUNTEER_ROLE): overwrites.get(RoleType.BLUESHIRT, PermissionOverwrite()),
+        find_role_by_name(guild.roles, TEAM_LEADER_ROLE): overwrites.get(RoleType.SUPERVISOR, PermissionOverwrite()),
+        find_role_by_name(guild.roles, SPECIAL_ROLE): overwrites.get(RoleType.UNVERIFIED_BLUESHIRT, PermissionOverwrite()),
     }
-    return role_overwrites
 
 
 class ChannelSet:
@@ -84,14 +79,11 @@ class ChannelSet:
         return self._role_map[role]
 
     def _get_overwrites(self, channel: GuildChannel) -> Overwrites:
-        overwrites: Overwrites = {}
-        for subject, permissions in channel.overwrites.items():
-            if isinstance(subject, Role):
-                overwrites[self._get_role_type(subject, channel.guild)] = {}
-                for permission, value in permissions:
-                    if value is not None:
-                        overwrites[self._get_role_type(subject, channel.guild)][permission] = value
-        return overwrites
+        return {
+            self._get_role_type(subject, channel.guild): permissions
+            for subject, permissions in channel.overwrites.items()
+            if isinstance(subject, Role)
+        }
 
     def count(self, category: Channel | None) -> int:
         """Count the number of channels in a category, or top-level channels if category is None."""
@@ -197,7 +189,6 @@ class ChannelSet:
     def diff(cls, old: ChannelSet, new: ChannelSet) -> list[ChannelCommand]:
         """Calculate the difference between two ChannelSets."""
         commands: list[ChannelCommand] = []
-        # TODO: Diff categories first (in case one gets renamed)
         cls._diff_channels(old._channels, new._channels, commands)
         return commands
 
@@ -253,7 +244,7 @@ class ChannelSet:
                     commands.append(command)
             else:
                 seen_old_channel_names.add(old_channel.name)
-                command = AlterChannelCommand.diff(old_channel, new_channel, new_index, old_channel.channel_type)
+                command = AlterChannelCommand.diff(old_channel, new_channel, old_channel.channel_type)
                 if command.has_changes:
                     commands.append(command)
 
@@ -424,7 +415,6 @@ class AlterChannelCommand(Command):
     overwrites: Overwrites | None = None
     topic: str | None = None
     category: Channel | None = None
-    position: int | None = None
     is_category: bool = False  # Whether this command is for a category, only for display purposes
     channel_type: ChannelType = ChannelType.text  # Used for sorting
     # Forum-specific:
@@ -434,8 +424,7 @@ class AlterChannelCommand(Command):
     use_case: ChannelUseCase | None = None
 
     @classmethod
-    def diff(cls, old_channel: Channel, new_channel: Channel,
-             new_position: int, channel_type: ChannelType) -> AlterChannelCommand:
+    def diff(cls, old_channel: Channel, new_channel: Channel, channel_type: ChannelType) -> AlterChannelCommand:
         command = cls(old_name=old_channel.name, new_name=new_channel.name,
                       is_category=new_channel.is_category, channel_type=channel_type, use_case=new_channel.use_case)
         changed_category = new_channel.category is not None and old_channel.category != new_channel.category
@@ -445,7 +434,6 @@ class AlterChannelCommand(Command):
             command.topic = new_channel.topic
         if not old_channel.category or changed_category:
             command.category = new_channel.category
-        command.position = new_position
         return command
 
     def is_rename(self) -> bool:
@@ -484,6 +472,22 @@ class AlterChannelCommand(Command):
             return f"ALTER  Category \"{self.old_name}\" ({', '.join(changes)})"
         return f"ALTER  Channel #{self.old_name} ({', '.join(changes)})"
 
+    @classmethod
+    def get_role_by_role_type(cls, role_type: RoleType, guild: Guild) -> Role:
+        if role_type == RoleType.EVERYONE:
+            return guild.default_role
+
+        role_names = {
+            RoleType.VERIFIED: VERIFIED_ROLE,
+            RoleType.BLUESHIRT: VOLUNTEER_ROLE,
+            RoleType.SUPERVISOR: TEAM_LEADER_ROLE,
+            RoleType.UNVERIFIED_BLUESHIRT: SPECIAL_ROLE,
+        }
+
+        if role := discord.utils.get(guild.roles, name=role_names[role_type]):
+            return role
+        raise ValueError("Invalid role type")
+
     async def apply(self, guild: Guild) -> None:
         channel = discord.utils.get(guild.channels, name=self.old_name)
         if channel is None:
@@ -499,8 +503,13 @@ class AlterChannelCommand(Command):
         if self.category is not None:
             kwargs["category"] = find_channel_by_name(guild.channels, self.category.name)  # type: ignore
 
-        if self.overwrites is not None and self.overwrites != {}:
-            kwargs["overwrites"] = self.overwrites  # type: ignore
+        if self.overwrites is not None:
+            overwrites = {
+                AlterChannelCommand.get_role_by_role_type(role_type, guild): permissions
+                for role_type, permissions in self.overwrites.items()
+            }
+            if overwrites != channel.overwrites:
+                kwargs["overwrites"] = overwrites  # type: ignore
 
         if channel.type == ChannelType.forum:
             await guild.fetch_emojis()
@@ -547,7 +556,7 @@ class DeleteChannelCommand(Command):
 @dataclasses.dataclass(frozen=True)
 class CreateCategoryCommand(Command):
     name: str
-    overwrites: Overwrites | None = None
+    overwrites: Overwrites = dataclasses.field(default_factory=dict)
 
     def __str__(self) -> str:
         return f'CREATE Category "{self.name}"'
@@ -563,7 +572,7 @@ class CreateChannelCommand(Command):
     name: str
     channel_type: ChannelType
     category: Channel | None = None
-    overwrites: Overwrites | None = None
+    overwrites: Overwrites = dataclasses.field(default_factory=dict)
     topic: str = ""
     # Bot use only:
     use_case: ChannelUseCase | None = None
@@ -615,7 +624,7 @@ class CreateChannelCommand(Command):
 class CreateForumCommand(Command):
     name: str
     category: Channel | None = None
-    overwrites: Overwrites | None = None
+    overwrites: Overwrites = dataclasses.field(default_factory=dict)
     topic: str = ""
     default_reaction_emoji: str | None = None
     available_tags: list[ForumTagDefinition] = dataclasses.field(default_factory=list)

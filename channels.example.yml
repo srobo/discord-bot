@@ -11,7 +11,7 @@
       permissions:
         everyone:
           send_messages: false
-        volunteer:
+        blueshirt:
           read_messages: true
           send_messages: true
     - name: blog
@@ -48,7 +48,7 @@
     everyone:
       read_messages: false
       send_messages: false
-    volunteer:
+    blueshirt:
       read_messages: true
       send_messages: true
   channels:
@@ -56,7 +56,7 @@
       use_case: audit
     - name: blueshirt-onboarding
       permissions:
-        unverified_volunteer:
+        unverified_blueshirt:
           read_messages: true
     - name: blueshirt-banter
     - name: blueshirt-serious-business
@@ -85,7 +85,7 @@
         everyone:
           read_messages: false
           send_messages: false
-        volunteer:
+        blueshirt:
           read_messages: true
           send_messages: true
         supervisor:

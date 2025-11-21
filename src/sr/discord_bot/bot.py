@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 import logging
+from pathlib import Path
 from typing import List, Literal
 
 import yaml
@@ -124,7 +125,7 @@ class BotClient(discord.Client):
             await self.apply_changes()
             await self.close()
 
-    async def _set_roles_and_channels(self, guild: Guild) -> None:
+    async def set_roles_and_channels(self, guild: Guild) -> None:
         roles = await guild.fetch_roles()
         self.admin_role = find_role_by_name(roles, ADMIN_ROLE)
         self.verified_role = find_role_by_name(roles, VERIFIED_ROLE)
@@ -151,11 +152,11 @@ class BotClient(discord.Client):
             return
 
         try:
-            await self._set_roles_and_channels(guild)
+            await self.set_roles_and_channels(guild)
         except ValueError:
             self.logger.info("Setting up guild...")
             await setup_guild(self)
-            await self._set_roles_and_channels(guild)
+            await self.set_roles_and_channels(guild)
 
         await check_bot_messages(self, self.guild)
         self.teams_data.gen_team_memberships(self.guild, self.supervisor_role)
@@ -288,13 +289,12 @@ To gain access, you must use `/join` with the password for your group.
         teamname:password
         ```
         """
+        path = Path('passwords.json')
         try:
-            with open('passwords.json') as f:
-                self.passwords = json.load(f)
+            self.passwords = json.loads(path.read_text())
         except (json.JSONDecodeError, FileNotFoundError):
-            with open('passwords.json', 'w') as f:
-                f.write('{}')
-                self.passwords = {}
+            path.write_text('{}')
+            self.passwords = {}
 
     def set_password(self, tla: str, password: str) -> None:
         self.passwords[tla.upper()] = password

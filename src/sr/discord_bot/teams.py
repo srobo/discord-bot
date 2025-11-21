@@ -1,10 +1,11 @@
+import re
 from typing import List, NamedTuple
 from statistics import mean
 from collections import defaultdict
 
 import discord
 
-from sr.discord_bot.constants import ROLE_PREFIX
+TEAM_ROLE_REGEX = re.compile('Team (?P<TLA>[A-Z]{3}\d?)')
 
 
 class TeamData(NamedTuple):
@@ -28,7 +29,7 @@ class TeamData(NamedTuple):
 
     def __str__(self) -> str:
         data_str = f'{self.TLA:<15} {self.members:>2}'
-        if self.leader is False:
+        if not self.leader:
             data_str += '  No supervisor'
         return data_str
 
@@ -42,9 +43,13 @@ class TeamsData(NamedTuple):
         """Generate a list of TeamData objects for the given guild, stored in teams_data."""
         teams_data = []
 
-        for role in filter(lambda role: role.name.startswith(ROLE_PREFIX), guild.roles):
+        for role in guild.roles:
+            match = TEAM_ROLE_REGEX.match(role.name)
+            if match is None:
+                continue
+
             team_data = TeamData(
-                TLA=role.name[len(ROLE_PREFIX):],
+                TLA=match['TLA'],
                 members=len(list(filter(
                     lambda member: leader_role not in member.roles,
                     role.members,

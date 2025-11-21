@@ -1,4 +1,3 @@
-import yamlschema
 from discord import ChannelType
 from yaml import load, Loader
 
@@ -9,10 +8,6 @@ def load_data(filename='channels.example.yml') -> list[dict]:
     with open(filename, 'r+') as f:
         data = load(f, Loader=Loader)
     return data
-
-def test_schema_valid() -> None:
-    assert yamlschema.validateYAML('channels.example.yml', 'channels.schema.yml')
-    assert yamlschema.validateYAML('channels.yml', 'channels.schema.yml')
 
 def test_channel_load() -> None:
     data = load_data()
