@@ -11,6 +11,7 @@
         everyone:
           read_messages: true
           send_messages: false
+          add_reactions: false
     - name: announcements
       channel_type: news
       permissions:
