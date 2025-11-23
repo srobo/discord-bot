@@ -111,6 +111,7 @@
     - name: community-updates
       topic: Discord community updates
       use_case: discord
+    - name: example-channel
 
 # Do not change the category below. It is populated automatically when users join.
 - name: Welcome
