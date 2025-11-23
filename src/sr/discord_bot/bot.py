@@ -120,9 +120,11 @@ class BotClient(discord.Client):
         if self.mode == 'plan':
             await self.list_guilds()
             await self.close()
+            exit(0)
         if self.mode == 'apply':
             await self.apply_changes()
             await self.close()
+            exit(0)
 
     async def _set_roles_and_channels(self, guild: Guild) -> None:
         roles = await guild.fetch_roles()
