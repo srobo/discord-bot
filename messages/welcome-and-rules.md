@@ -14,4 +14,4 @@ Hopefully we won't need to, but we will raise violations of these rules to your 
 
 You should have already been sent a welcome message by $bot, in your very own `#welcome-<yourname>` channel.
 
-To get access, send a message in that channel with your **team password** (which was emailed to your team supervisor). Once you do this, you will automatically be given access.
+To get access, use the `/join` command with your **team password** (which was emailed to your team supervisor). Once you do this, you will automatically be given access.
