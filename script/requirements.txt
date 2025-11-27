@@ -44,7 +44,7 @@ mypy-extensions==1.0.0
     # via mypy
 packaging==23.1
     # via build
-pip-tools==7.3.0
+pip-tools==7.5.2
     # via -r script/requirements.in
 pycodestyle==2.11.0
     # via
@@ -53,7 +53,9 @@ pycodestyle==2.11.0
 pyflakes==3.1.0
     # via flake8
 pyproject-hooks==1.0.0
-    # via build
+    # via
+    #   build
+    #   pip-tools
 referencing==0.36.2
     # via types-jsonschema
 rpds-py==0.27.1
