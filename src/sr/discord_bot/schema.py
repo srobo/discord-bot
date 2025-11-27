@@ -8,7 +8,7 @@ else:
 
 from typing import Any
 
-from discord import ForumTag, ChannelType, PartialEmoji
+from discord import ForumTag, ChannelType, PartialEmoji, PermissionOverwrite
 
 
 class RoleType(StrEnum):
@@ -19,7 +19,7 @@ class RoleType(StrEnum):
     UNVERIFIED_BLUESHIRT = "unverified_blueshirt"
 
 
-Overwrites = dict[RoleType, dict[str, bool]]
+Overwrites = dict[RoleType, PermissionOverwrite]
 
 
 class ChannelUseCase(StrEnum):
@@ -77,7 +77,10 @@ class ChannelDefinition:
         channel = cls(
             name=data["name"],
             old_names=data.get("old_names", []),
-            overwrites=data.get("permissions", {}),
+            overwrites={
+                RoleType(role_type): PermissionOverwrite(**permissions)
+                for role_type, permissions in data.get("permissions", {}).items()
+            },
             topic=data.get("topic", ""),
             category=category,
             channel_type=ChannelType[data.get("channel_type", default_type)],

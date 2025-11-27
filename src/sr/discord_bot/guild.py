@@ -127,7 +127,7 @@ async def create_channels(client: "BotClient", guild: Guild) -> None:
         await asyncio.sleep(.5)  # avoid hitting rate limits
 
     logging.info("Channels created")
-    await client._set_roles_and_channels(guild)
+    await client.set_roles_and_channels(guild)
 
 
 async def send_template_messages(client: "BotClient", guild: Guild) -> None:
