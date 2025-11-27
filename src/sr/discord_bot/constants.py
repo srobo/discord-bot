@@ -30,6 +30,7 @@ FEED_CHECK_INTERVAL = 60 * 3  # in seconds
 VERIFIED_PERMISSION_MASK = \
     Permissions.send_messages.flag | \
     Permissions.send_messages_in_threads.flag | \
+    Permissions.connect.flag | \
     Permissions.create_public_threads.flag | \
     Permissions.embed_links.flag | \
     Permissions.attach_files.flag | \
