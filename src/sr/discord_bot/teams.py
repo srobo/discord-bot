@@ -5,7 +5,7 @@ from collections import defaultdict
 
 import discord
 
-TEAM_ROLE_REGEX = re.compile('Team (?P<TLA>[A-Z]{3}\d?)')
+TEAM_ROLE_REGEX = re.compile(r'Team (?P<TLA>[A-Z]{3}\d?)')
 
 
 class TeamData(NamedTuple):

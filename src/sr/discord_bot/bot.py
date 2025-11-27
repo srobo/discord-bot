@@ -2,8 +2,8 @@ import os
 import json
 import asyncio
 import logging
-from pathlib import Path
 from typing import List, Literal
+from pathlib import Path
 
 import yaml
 import discord

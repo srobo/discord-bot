@@ -54,7 +54,8 @@ def match_overwrites(overwrites: Overwrites, guild: Guild) -> Mapping[Role | Mem
         find_role_by_name(guild.roles, VERIFIED_ROLE): overwrites.get(RoleType.VERIFIED, PermissionOverwrite()),
         find_role_by_name(guild.roles, VOLUNTEER_ROLE): overwrites.get(RoleType.BLUESHIRT, PermissionOverwrite()),
         find_role_by_name(guild.roles, TEAM_LEADER_ROLE): overwrites.get(RoleType.SUPERVISOR, PermissionOverwrite()),
-        find_role_by_name(guild.roles, SPECIAL_ROLE): overwrites.get(RoleType.UNVERIFIED_BLUESHIRT, PermissionOverwrite()),
+        find_role_by_name(guild.roles, SPECIAL_ROLE):
+            overwrites.get(RoleType.UNVERIFIED_BLUESHIRT, PermissionOverwrite()),
     }
 
 
@@ -562,8 +563,6 @@ class CreateCategoryCommand(Command):
         return f'CREATE Category "{self.name}"'
 
     async def apply(self, guild: Guild) -> None:
-        if self.overwrites is None:
-            return
         await guild.create_category(self.name, overwrites=match_overwrites(self.overwrites, guild))
 
 
